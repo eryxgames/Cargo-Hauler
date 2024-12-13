@@ -1,5 +1,5 @@
 # Cargo Hauler - Space Trading Adventure
-Engaging space trading RPG with data science visualization 
+(v0.1 alfa) Engaging space trading RPG with data science visualization 
 
 ## Overview
 Cargo Hauler is a space trading simulation game where you navigate a dynamic universe, trade commodities, and upgrade your ship.
