@@ -1,0 +1,129 @@
+{
+    "raw_materials": [
+        {
+            "name": "Minerals",
+            "base_price": 150.00,
+            "volume_per_unit": 2.5,
+            "rarity": "common",
+            "description": "Basic mineral resources used in manufacturing",
+            "regions": ["Mining Planets", "Industrial Worlds"],
+            "price_volatility": 0.15
+        },
+        {
+            "name": "Rare Metals",
+            "base_price": 750.00,
+            "volume_per_unit": 1.0,
+            "rarity": "rare",
+            "description": "Precious and rare metallic elements",
+            "regions": ["High-Tech Planets", "Frontier Worlds"],
+            "price_volatility": 0.25
+        },
+        {
+            "name": "Organic Compounds",
+            "base_price": 200.00,
+            "volume_per_unit": 1.5,
+            "rarity": "common", 
+            "description": "Chemical compounds derived from organic sources",
+            "regions": ["Agricultural Planets", "Research Stations"],
+            "price_volatility": 0.12
+        }
+    ],
+    "agricultural_goods": [
+        {
+            "name": "Grain",
+            "base_price": 75.00,
+            "volume_per_unit": 3.0,
+            "rarity": "common",
+            "description": "Basic food staple for space colonies",
+            "regions": ["Agricultural Planets", "Oceanic Worlds"],
+            "price_volatility": 0.10
+        },
+        {
+            "name": "Synthetic Nutrients",
+            "base_price": 250.00,
+            "volume_per_unit": 1.0,
+            "rarity": "uncommon",
+            "description": "Advanced nutritional supplements",
+            "regions": ["High-Tech Planets", "Space Stations"],
+            "price_volatility": 0.18
+        },
+        {
+            "name": "Exotic Spices",
+            "base_price": 500.00,
+            "volume_per_unit": 0.5,
+            "rarity": "rare",
+            "description": "Rare and valuable culinary ingredients",
+            "regions": ["Trading Hubs", "Frontier Worlds"],
+            "price_volatility": 0.30
+        }
+    ],
+    "technological_goods": [
+        {
+            "name": "Computer Components",
+            "base_price": 300.00,
+            "volume_per_unit": 1.0,
+            "rarity": "uncommon",
+            "description": "Advanced electronic components",
+            "regions": ["High-Tech Planets", "Research Stations"],
+            "price_volatility": 0.20
+        },
+        {
+            "name": "Advanced Robotics",
+            "base_price": 1200.00,
+            "volume_per_unit": 2.0,
+            "rarity": "rare",
+            "description": "Cutting-edge robotic systems",
+            "regions": ["Industrial Planets", "Research Stations"],
+            "price_volatility": 0.25
+        },
+        {
+            "name": "Data Crystals",
+            "base_price": 800.00,
+            "volume_per_unit": 0.5,
+            "rarity": "very_rare",
+            "description": "High-density information storage devices",
+            "regions": ["Research Stations", "High-Tech Worlds"],
+            "price_volatility": 0.35
+        }
+    ],
+    "luxury_goods": [
+        {
+            "name": "Exotic Artifacts",
+            "base_price": 2000.00,
+            "volume_per_unit": 0.3,
+            "rarity": "very_rare",
+            "description": "Rare cultural and historical items",
+            "regions": ["Trading Hubs", "Frontier Worlds"],
+            "price_volatility": 0.40
+        },
+        {
+            "name": "Synthetic Gemstones",
+            "base_price": 1500.00,
+            "volume_per_unit": 0.2,
+            "rarity": "rare",
+            "description": "Artificially created precious stones",
+            "regions": ["High-Tech Planets", "Trading Hubs"],
+            "price_volatility": 0.30
+        }
+    ],
+    "industrial_goods": [
+        {
+            "name": "Prefabricated Structures",
+            "base_price": 500.00,
+            "volume_per_unit": 5.0,
+            "rarity": "uncommon",
+            "description": "Modular construction components",
+            "regions": ["Industrial Planets", "Frontier Worlds"],
+            "price_volatility": 0.15
+        },
+        {
+            "name": "Industrial Machinery",
+            "base_price": 1000.00,
+            "volume_per_unit": 4.0,
+            "rarity": "rare",
+            "description": "Large-scale manufacturing equipment",
+            "regions": ["Industrial Planets", "Mining Worlds"],
+            "price_volatility": 0.20
+        }
+    ]
+}
