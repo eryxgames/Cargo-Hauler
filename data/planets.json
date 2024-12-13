@@ -1,0 +1,74 @@
+{
+    "planets": [
+        {
+            "name": "New Terra",
+            "type": "Agricultural",
+            "economy_level": 0.8,
+            "resources": {
+                "Agricultural Goods": 0.9,
+                "Technology": 0.4,
+                "Minerals": 0.3
+            }
+        },
+        {
+            "name": "Proxima",
+            "type": "Industrial", 
+            "economy_level": 0.7,
+            "resources": {
+                "Manufactured Goods": 0.85,
+                "Rare Elements": 0.6,
+                "Technology": 0.7
+            }
+        },
+        {
+            "name": "Arcturus",
+            "type": "Mining",
+            "economy_level": 0.5,
+            "resources": {
+                "Minerals": 0.95,
+                "Rare Elements": 0.8,
+                "Agricultural Goods": 0.2
+            }
+        },
+        {
+            "name": "Orion Prime",
+            "type": "High-Tech",
+            "economy_level": 0.9,
+            "resources": {
+                "Technology": 0.95,
+                "Rare Elements": 0.7,
+                "Manufactured Goods": 0.6
+            }
+        },
+        {
+            "name": "Sigma Outpost",
+            "type": "Trading Hub",
+            "economy_level": 0.6,
+            "resources": {
+                "Manufactured Goods": 0.5,
+                "Agricultural Goods": 0.4,
+                "Minerals": 0.5
+            }
+        },
+        {
+            "name": "Epsilon Station",
+            "type": "Desert",
+            "economy_level": 0.4,
+            "resources": {
+                "Rare Elements": 0.5,
+                "Technology": 0.3,
+                "Minerals": 0.6
+            }
+        },
+        {
+            "name": "Nova Haven",
+            "type": "Oceanic",
+            "economy_level": 0.7,
+            "resources": {
+                "Agricultural Goods": 0.7,
+                "Manufactured Goods": 0.4,
+                "Technology": 0.5
+            }
+        }
+    ]
+}

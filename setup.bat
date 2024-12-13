@@ -25,5 +25,5 @@ pip install -r requirements.txt
 echo Verifying installations...
 pip list
 
-echo Setup complete! Use 'run_game.bat' to start the game.
+echo Setup complete! Use 'cargo.bat' to start the game.
 pause

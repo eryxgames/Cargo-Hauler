@@ -24,29 +24,43 @@ class UniverseGenerator:
         self.difficulty = difficulty
         self.planets = []
         self.trade_network = nx.Graph()
-        self.generate_universe()
-    
-    def generate_universe(self):
-        planet_names = [
+        
+        # Define planet names as a reusable list
+        self.planet_names = [
             "New Terra", "Proxima", "Arcturus", "Orion Prime", 
-            "Sigma Outpost", "Epsilon Station", "Nova Haven"
+            "Sigma Outpost", "Epsilon Station", "Nova Haven",
+            "Andromeda Base", "Centauri Outpost", "Nebula Prime",
+            "Starlight Station", "Horizon Colony", "Quantum Nexus"
         ]
-        planet_types = [
+        self.planet_types = [
             "Desert", "Oceanic", "Industrial", "Agricultural", 
             "High-Tech", "Mining", "Trading Hub"
         ]
         
+        self.generate_universe()
+    
+    def generate_universe(self):
         # Generate planets based on difficulty
         num_planets = 5 + (self.difficulty * 2)
         
-        for _ in range(num_planets):
+        # Create a copy of planet names to avoid modifying the original list
+        available_names = self.planet_names.copy()
+        
+        for _ in range(min(num_planets, len(available_names))):
+            # If no names left, break the loop
+            if not available_names:
+                break
+            
+            # Choose and remove a random name
+            name = random.choice(available_names)
+            available_names.remove(name)
+            
             planet = Planet(
-                name=random.choice(planet_names),
-                planet_type=random.choice(planet_types),
+                name=name,
+                planet_type=random.choice(self.planet_types),
                 economy_level=random.uniform(0.3, 1.0)
             )
             self.planets.append(planet)
-            planet_names.remove(planet.name)  # Ensure unique names
         
         # Create trade network
         self.create_trade_network()
