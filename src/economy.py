@@ -6,62 +6,64 @@ import os
 class EconomySimulator:
     def __init__(self, planets):
         self.planets = planets
-        self.commodities = self.load_commodities()
+        self.commodities = self.generate_commodities()
     
-    def load_commodities(self):
-        # Determine the path to the commodities.json file
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        commodities_path = os.path.join(base_path, 'data', 'commodities.json')
+    def generate_commodities(self):
+        commodity_types = [
+            "raw_materials", 
+            "agricultural_goods", 
+            "technological_goods", 
+            "luxury_goods", 
+            "industrial_goods"
+        ]
         
-        try:
-            with open(commodities_path, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            print(f"Warning: Commodities file not found at {commodities_path}")
-            return self.generate_default_commodities()
-    
-    def generate_default_commodities(self):
-        # Fallback method if JSON is not found
-        return {
-            "raw_materials": [
-                {
-                    "name": "Minerals",
-                    "base_price": 150.00,
-                    "volume_per_unit": 2.5,
-                    "price_volatility": 0.15
-                }
-            ]
-        }
+        commodities = {}
+        for commodity in commodity_types:
+            commodities[commodity] = {
+                'base_price': random.uniform(50, 500),
+                'price_volatility': random.uniform(0.05, 0.2)
+            }
+        
+        return commodities
     
     def calculate_price(self, commodity, planet):
-        # More complex price calculation using commodity details
-        base_price = commodity['base_price']
-        volatility = commodity['price_volatility']
+        # Ensure the commodity exists in our commodities dictionary
+        if commodity not in self.commodities:
+            raise ValueError(f"Commodity {commodity} not found in market")
         
-        # Adjust price based on planet's economy and random factors
+        # Safely extract commodity information
+        commodity_info = self.commodities[commodity]
+        
+        # Extract base price and volatility
+        base_price = commodity_info['base_price']
+        volatility = commodity_info['price_volatility']
+        
+        # Adjust price based on planet's economy and available resources
         economy_multiplier = planet.economy_level
+        
+        # Check if the planet has this commodity in its resources
+        resource_multiplier = planet.resources.get(commodity, 0.5)
+        
+        # Calculate price variation
         price_variation = random.uniform(-volatility, volatility)
         
-        final_price = base_price * (1 + price_variation) * economy_multiplier
+        # Calculate final price
+        final_price = base_price * (1 + price_variation) * economy_multiplier * resource_multiplier
         
         return round(final_price, 2)
     
     def get_market_overview(self):
         market_data = []
-        
-        # Iterate through all commodity categories
-        for category, commodities in self.commodities.items():
-            for commodity in commodities:
-                planet_prices = {
-                    'Category': category,
-                    'Commodity': commodity['name']
-                }
-                
-                # Get prices for each planet
-                for planet in self.planets:
-                    planet_prices[planet.name] = self.calculate_price(commodity, planet)
-                
-                market_data.append(planet_prices)
+        for planet in self.planets:
+            planet_prices = {
+                'Planet': planet.name,
+                'Economy Level': planet.economy_level
+            }
+            
+            for commodity in self.commodities:
+                planet_prices[commodity] = self.calculate_price(commodity, planet)
+            
+            market_data.append(planet_prices)
         
         return pd.DataFrame(market_data)
     

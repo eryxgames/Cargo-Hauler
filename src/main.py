@@ -112,6 +112,11 @@ class CargoHauler:
         try:
             self.console.print(f"[bold]Trading at {self.current_planet.name}[/bold]")
             
+            # Ensure commodities exist before trying to access them
+            if not hasattr(self.economy, 'commodities') or not self.economy.commodities:
+                self.console.print("[red]No commodities available for trading.[/red]")
+                return
+            
             # Get available commodities from the economy
             available_commodities = list(self.economy.commodities.keys())
             
@@ -122,8 +127,11 @@ class CargoHauler:
             # Display available commodities and their prices
             self.console.print("\nAvailable Commodities:")
             for i, commodity in enumerate(available_commodities, 1):
-                price = self.economy.calculate_price(commodity, self.current_planet)
-                self.console.print(f"{i}. {commodity}: {price:.2f} credits")
+                try:
+                    price = self.economy.calculate_price(commodity, self.current_planet)
+                    self.console.print(f"{i}. {commodity}: {price:.2f} credits")
+                except Exception as price_error:
+                    self.console.print(f"[red]Error calculating price for {commodity}: {price_error}[/red]")
             
             # Prompt for commodity selection
             commodity_choice = self.console.input("[yellow]Enter the number of the commodity to trade (or 0 to cancel): [/yellow]")
@@ -136,7 +144,13 @@ class CargoHauler:
                 
                 if 0 <= commodity_index < len(available_commodities):
                     selected_commodity = available_commodities[commodity_index]
-                    price = self.economy.calculate_price(selected_commodity, self.current_planet)
+                    
+                    # Safely get the price
+                    try:
+                        price = self.economy.calculate_price(selected_commodity, self.current_planet)
+                    except Exception as price_error:
+                        self.console.print(f"[red]Error getting price: {price_error}[/red]")
+                        return
                     
                     # Buying or selling prompt
                     trade_type = self.console.input("[yellow]Do you want to (B)uy or (S)ell? [/yellow]").lower()
@@ -203,7 +217,10 @@ class CargoHauler:
         
         except Exception as e:
             self.console.print(f"[red]Error in trading: {e}[/red]")
-    
+            # Optional: Add more detailed error tracking
+            import traceback
+            traceback.print_exc()
+
     def travel_to_new_planet(self):
         possible_planets = [p for p in self.universe.planets if p != self.current_planet]
         if possible_planets:

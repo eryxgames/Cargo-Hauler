@@ -10,13 +10,20 @@ class Planet:
         self.resources = self.generate_resources()
     
     def generate_resources(self):
+        # Align resource types with commodity types
         resource_types = [
-            "Minerals", "Agricultural Goods", "Technology", 
-            "Rare Elements", "Manufactured Goods"
+            "raw_materials", 
+            "agricultural_goods", 
+            "technological_goods", 
+            "luxury_goods", 
+            "industrial_goods"
         ]
+        
+        # Randomly select 3-4 resources and assign them a value
+        selected_resources = random.sample(resource_types, random.randint(3, 4))
         return {
             resource: random.uniform(0.1, 1.0) 
-            for resource in random.sample(resource_types, 3)
+            for resource in selected_resources
         }
 
 class UniverseGenerator:
@@ -24,40 +31,30 @@ class UniverseGenerator:
         self.difficulty = difficulty
         self.planets = []
         self.trade_network = nx.Graph()
-        
-        # Define planet names as a reusable list
-        self.planet_names = [
-            "New Terra", "Proxima", "Arcturus", "Orion Prime", 
-            "Sigma Outpost", "Epsilon Station", "Nova Haven",
-            "Andromeda Base", "Centauri Outpost", "Nebula Prime",
-            "Starlight Station", "Horizon Colony", "Quantum Nexus"
-        ]
-        self.planet_types = [
-            "Desert", "Oceanic", "Industrial", "Agricultural", 
-            "High-Tech", "Mining", "Trading Hub"
-        ]
-        
         self.generate_universe()
     
     def generate_universe(self):
+        planet_names = [
+            "New Terra", "Proxima", "Arcturus", "Orion Prime", 
+            "Sigma Outpost", "Epsilon Station", "Nova Haven", 
+            "Quantum Nexus", "Helios Prime", "Crimson Horizon"
+        ]
+        planet_types = [
+            "Desert", "Oceanic", "Industrial", "Agricultural", 
+            "High-Tech", "Mining", "Trading Hub", "Research Colony"
+        ]
+        
         # Generate planets based on difficulty
         num_planets = 5 + (self.difficulty * 2)
         
-        # Create a copy of planet names to avoid modifying the original list
-        available_names = self.planet_names.copy()
-        
-        for _ in range(min(num_planets, len(available_names))):
-            # If no names left, break the loop
-            if not available_names:
-                break
-            
-            # Choose and remove a random name
-            name = random.choice(available_names)
-            available_names.remove(name)
+        for _ in range(num_planets):
+            # Ensure unique planet names
+            planet_name = random.choice(planet_names)
+            planet_names.remove(planet_name)
             
             planet = Planet(
-                name=name,
-                planet_type=random.choice(self.planet_types),
+                name=planet_name,
+                planet_type=random.choice(planet_types),
                 economy_level=random.uniform(0.3, 1.0)
             )
             self.planets.append(planet)
