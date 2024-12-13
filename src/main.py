@@ -126,9 +126,15 @@ class CargoHauler:
             
             # Display available commodities and their prices
             self.console.print("\nAvailable Commodities:")
+            commodity_prices = {}
             for i, commodity in enumerate(available_commodities, 1):
                 try:
+                    # Safely calculate price
                     price = self.economy.calculate_price(commodity, self.current_planet)
+                    commodity_prices[i] = {
+                        'name': commodity, 
+                        'price': price
+                    }
                     self.console.print(f"{i}. {commodity}: {price:.2f} credits")
                 except Exception as price_error:
                     self.console.print(f"[red]Error calculating price for {commodity}: {price_error}[/red]")
@@ -137,87 +143,84 @@ class CargoHauler:
             commodity_choice = self.console.input("[yellow]Enter the number of the commodity to trade (or 0 to cancel): [/yellow]")
             
             try:
-                commodity_index = int(commodity_choice) - 1
+                commodity_index = int(commodity_choice)
                 
-                if commodity_index == -1:
+                if commodity_index == 0:
                     return  # User chose to cancel
                 
-                if 0 <= commodity_index < len(available_commodities):
-                    selected_commodity = available_commodities[commodity_index]
+                if commodity_index not in commodity_prices:
+                    self.console.print("[red]Invalid commodity selection.[/red]")
+                    return
+                
+                # Get selected commodity details
+                selected_commodity = commodity_prices[commodity_index]['name']
+                price = commodity_prices[commodity_index]['price']
+                
+                # Buying or selling prompt
+                trade_type = self.console.input("[yellow]Do you want to (B)uy or (S)ell? [/yellow]").lower()
+                
+                if trade_type in ['b', 'buy']:
+                    # Buying logic
+                    max_quantity = min(
+                        self.player.cargo_capacity - self.player.cargo_used, 
+                        int(self.player.credits / price)
+                    )
                     
-                    # Safely get the price
+                    quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to buy? (Max: {max_quantity}): [/yellow]")
+                    
                     try:
-                        price = self.economy.calculate_price(selected_commodity, self.current_planet)
-                    except Exception as price_error:
-                        self.console.print(f"[red]Error getting price: {price_error}[/red]")
+                        quantity = int(quantity_str)
+                        
+                        if 0 < quantity <= max_quantity:
+                            total_cost = quantity * price
+                            
+                            # Perform the purchase
+                            if self.player.add_cargo(selected_commodity, quantity, price):
+                                self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.2f} credits[/green]")
+                            else:
+                                self.console.print("[red]Purchase failed. Check your cargo space or credits.[/red]")
+                        else:
+                            self.console.print("[red]Invalid quantity.[/red]")
+                    
+                    except ValueError:
+                        self.console.print("[red]Please enter a valid number.[/red]")
+                
+                elif trade_type in ['s', 'sell']:
+                    # Selling logic
+                    if selected_commodity not in self.player.cargo:
+                        self.console.print(f"[red]You don't have any {selected_commodity} to sell.[/red]")
                         return
                     
-                    # Buying or selling prompt
-                    trade_type = self.console.input("[yellow]Do you want to (B)uy or (S)ell? [/yellow]").lower()
+                    # Get available quantity safely
+                    available_quantity = self.player.cargo.get(selected_commodity, {}).get('quantity', 0)
                     
-                    if trade_type in ['b', 'buy']:
-                        # Buying logic
-                        max_quantity = min(self.player.cargo_capacity - self.player.cargo_used, 
-                                        int(self.player.credits / price))
+                    quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to sell? (Max: {available_quantity}): [/yellow]")
+                    
+                    try:
+                        quantity = int(quantity_str)
                         
-                        quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to buy? (Max: {max_quantity}): [/yellow]")
-                        
-                        try:
-                            quantity = int(quantity_str)
+                        if 0 < quantity <= available_quantity:
+                            total_revenue = quantity * price
                             
-                            if 0 < quantity <= max_quantity:
-                                total_cost = quantity * price
-                                
-                                # Perform the purchase
-                                if self.player.add_cargo(selected_commodity, quantity, price):
-                                    self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.2f} credits[/green]")
-                                else:
-                                    self.console.print("[red]Purchase failed. Check your cargo space or credits.[/red]")
+                            # Perform the sale
+                            if self.player.sell_cargo(selected_commodity, quantity, price):
+                                self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.2f} credits[/green]")
                             else:
-                                self.console.print("[red]Invalid quantity.[/red]")
-                        
-                        except ValueError:
-                            self.console.print("[red]Please enter a valid number.[/red]")
+                                self.console.print("[red]Sale failed.[/red]")
+                        else:
+                            self.console.print("[red]Invalid quantity.[/red]")
                     
-                    elif trade_type in ['s', 'sell']:
-                        # Selling logic
-                        if selected_commodity not in self.player.cargo:
-                            self.console.print(f"[red]You don't have any {selected_commodity} to sell.[/red]")
-                            return
-                        
-                        available_quantity = self.player.cargo[selected_commodity]['quantity']
-                        
-                        quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to sell? (Max: {available_quantity}): [/yellow]")
-                        
-                        try:
-                            quantity = int(quantity_str)
-                            
-                            if 0 < quantity <= available_quantity:
-                                total_revenue = quantity * price
-                                
-                                # Perform the sale
-                                if self.player.sell_cargo(selected_commodity, quantity, price):
-                                    self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.2f} credits[/green]")
-                                else:
-                                    self.console.print("[red]Sale failed.[/red]")
-                            else:
-                                self.console.print("[red]Invalid quantity.[/red]")
-                        
-                        except ValueError:
-                            self.console.print("[red]Please enter a valid number.[/red]")
-                    
-                    else:
-                        self.console.print("[red]Invalid trade type. Choose Buy or Sell.[/red]")
+                    except ValueError:
+                        self.console.print("[red]Please enter a valid number.[/red]")
                 
                 else:
-                    self.console.print("[red]Invalid commodity selection.[/red]")
+                    self.console.print("[red]Invalid trade type. Choose Buy or Sell.[/red]")
             
             except ValueError:
                 self.console.print("[red]Please enter a valid number.[/red]")
         
         except Exception as e:
             self.console.print(f"[red]Error in trading: {e}[/red]")
-            # Optional: Add more detailed error tracking
             import traceback
             traceback.print_exc()
 
