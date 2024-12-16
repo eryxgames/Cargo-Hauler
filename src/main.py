@@ -51,7 +51,7 @@ class CargoHauler:
         while not self.game_over:
             try:
                 self.display_status()
-                self.generate_random_quest()
+                self.generate_random_quest()  # Ensure quests are generated at the start of each turn
                 self.player_turn()
             except KeyboardInterrupt:
                 self.console.print("\n[yellow]Game interrupted. Exiting...[/yellow]")
@@ -61,6 +61,7 @@ class CargoHauler:
                 break
 
         self.console.print("[bold yellow]Thanks for playing Cargo Hauler![/bold yellow]")
+
 
     def display_status(self):
         if self.status_changed:
@@ -550,9 +551,20 @@ class CargoHauler:
                 self.console.print(f"[bold green]Quest completed: {quest['description']}[/bold green]")
                 self.player.complete_quest(quest)
 
+        # Determine the number of quests to display based on the player's level
+        if self.player.level <= 3:
+            max_quests = 1
+        elif self.player.level <= 10:
+            max_quests = 2
+        else:
+            max_quests = 3
+
+        # Randomly select a subset of quests to display
+        available_quests = random.sample(self.universe.quests, min(max_quests, len(self.universe.quests)))
+
         # Add quest system
         self.console.print("\nAvailable Quests:")
-        for i, quest in enumerate(self.universe.quests, 1):
+        for i, quest in enumerate(available_quests, 1):
             self.console.print(f"{i}. {quest['description']}")
             self.console.print(f"   Backstory: {quest['backstory']}")
 
@@ -562,15 +574,14 @@ class CargoHauler:
 
         try:
             quest_index = int(quest_choice)
-            if 1 <= quest_index <= len(self.universe.quests):
-                selected_quest = self.universe.quests[quest_index - 1]
+            if 1 <= quest_index <= len(available_quests):
+                selected_quest = available_quests[quest_index - 1]
                 self.player.accept_quest(selected_quest)
                 self.universe.quests.remove(selected_quest)
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
-
 
     def accept_quest(self, quest):
         # Check if the player has the required upgrades for passenger transport quests
@@ -601,6 +612,7 @@ class CargoHauler:
             self.console.print(f"{quest['description']}")
             self.console.print(f"Backstory: {quest['backstory']}")
             self.universe.quests.append(quest)
+
 
 
 def main():
