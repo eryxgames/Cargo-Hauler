@@ -22,7 +22,7 @@
             "name": "Organic Compounds",
             "base_price": 200.00,
             "volume_per_unit": 1.5,
-            "rarity": "common", 
+            "rarity": "common",
             "description": "Chemical compounds derived from organic sources",
             "regions": ["Agricultural Planets", "Research Stations"],
             "price_volatility": 0.12

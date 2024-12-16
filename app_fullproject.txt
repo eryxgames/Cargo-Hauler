@@ -1,0 +1,906 @@
+You are professional developer and game designer. Here is project code and structure of a python app, rpg space adventure trading game with data science visualization demo stats:
+
+structure: list of files
+
+- requirements.txt
+- src/main.py
+- src/player.py
+- src/economy.py
+- src/events.py
+- src/technologies.py
+- src/universe.py
+- data/planets.json
+- data/commodities.json
+
+File name: requirements.txt
+content of requirements.txt
+numpy
+pandas
+networkx
+plotly
+dash
+gradio
+pygame
+rich
+
+File name: src/main.py
+content of src/main.py
+import sys
+import os
+import pygame
+import random
+import traceback
+from rich.console import Console
+from rich.table import Table
+
+# Add the project root to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
+from src.universe import UniverseGenerator
+from src.player import Player
+from src.economy import EconomySimulator
+from src.events import EventGenerator
+from src.technologies import TechnologyTree
+
+class CargoHauler:
+    def __init__(self, difficulty=2):
+        pygame.init()
+        self.console = Console()
+        self.difficulty = difficulty
+        
+        # Initialize game systems
+        self.universe = UniverseGenerator(difficulty)
+        self.player = Player()
+        self.economy = EconomySimulator(self.universe.planets)
+        self.event_generator = EventGenerator()
+        self.tech_tree = TechnologyTree()
+        
+        # Game state
+        self.current_planet = None
+        self.game_over = False
+        
+    def start_game(self):
+        self.console.print("[bold green]Welcome to Cargo Hauler![/bold green]")
+        self.current_planet = random.choice(self.universe.planets)
+        try:
+            self.main_game_loop()
+        except Exception as e:
+            self.console.print("[bold red]An error occurred:[/bold red]")
+            self.console.print(f"[red]{traceback.format_exc()}[/red]")
+    
+    def main_game_loop(self):
+        while not self.game_over:
+            try:
+                self.display_status()
+                self.player_turn()
+            except KeyboardInterrupt:
+                self.console.print("\n[yellow]Game interrupted. Exiting...[/yellow]")
+                break
+            except Exception as e:
+                self.console.print(f"[red]Error in game loop: {e}[/red]")
+                break
+        
+        self.console.print("[bold yellow]Thanks for playing Cargo Hauler![/bold yellow]")
+    
+    def display_status(self):
+        try:
+            table = Table(title="Current Status")
+            table.add_column("Attribute", style="cyan")
+            table.add_column("Value", style="magenta")
+            
+            table.add_row("Current Planet", self.current_planet.name)
+            table.add_row("Credits", str(self.player.credits))
+            table.add_row("Cargo Space", f"{self.player.cargo_used}/{self.player.cargo_capacity}")
+            
+            self.console.print(table)
+        except Exception as e:
+            self.console.print(f"[red]Error displaying status: {e}[/red]")
+    
+    def player_turn(self):
+        try:
+            actions = [
+                "Trade Goods",
+                "Travel to New Planet",
+                "Check Market Prices",
+                "Upgrade Ship",
+                "View Technologies",
+                "Quit Game"
+            ]
+            
+            self.console.print("\nChoose an action:")
+            for i, action in enumerate(actions, 1):
+                self.console.print(f"{i}. {action}")
+            
+            choice = self.console.input("[bold yellow]Enter your choice: [/bold yellow]")
+            
+            try:
+                choice = int(choice)
+                if choice == 1:
+                    self.trade_goods()
+                elif choice == 2:
+                    self.travel_to_new_planet()
+                elif choice == 3:
+                    self.check_market_prices()
+                elif choice == 4:
+                    self.upgrade_ship()
+                elif choice == 5:
+                    self.view_technologies()
+                elif choice == 6:
+                    self.game_over = True
+                else:
+                    self.console.print("[bold red]Invalid choice![/bold red]")
+            except ValueError:
+                self.console.print("[bold red]Please enter a number![/bold red]")
+        except Exception as e:
+            self.console.print(f"[red]Error in player turn: {e}[/red]")
+    
+    def trade_goods(self):
+        try:
+            self.console.print(f"[bold]Trading at {self.current_planet.name}[/bold]")
+            
+            # Ensure commodities exist before trying to access them
+            if not hasattr(self.economy, 'commodities') or not self.economy.commodities:
+                self.console.print("[red]No commodities available for trading.[/red]")
+                return
+            
+            # Get available commodities from the economy
+            available_commodities = list(self.economy.commodities.keys())
+            
+            if not available_commodities:
+                self.console.print("[red]No commodities available for trading.[/red]")
+                return
+            
+            # Display available commodities and their prices
+            self.console.print("\nAvailable Commodities:")
+            commodity_prices = {}
+            for i, commodity in enumerate(available_commodities, 1):
+                try:
+                    # Safely calculate price
+                    price = self.economy.calculate_price(commodity, self.current_planet)
+                    commodity_prices[i] = {
+                        'name': commodity, 
+                        'price': price
+                    }
+                    self.console.print(f"{i}. {commodity}: {price:.2f} credits")
+                except Exception as price_error:
+                    self.console.print(f"[red]Error calculating price for {commodity}: {price_error}[/red]")
+            
+            # Prompt for commodity selection
+            commodity_choice = self.console.input("[yellow]Enter the number of the commodity to trade (or 0 to cancel): [/yellow]")
+            
+            try:
+                commodity_index = int(commodity_choice)
+                
+                if commodity_index == 0:
+                    return  # User chose to cancel
+                
+                if commodity_index not in commodity_prices:
+                    self.console.print("[red]Invalid commodity selection.[/red]")
+                    return
+                
+                # Get selected commodity details
+                selected_commodity = commodity_prices[commodity_index]['name']
+                price = commodity_prices[commodity_index]['price']
+                
+                # Buying or selling prompt
+                trade_type = self.console.input("[yellow]Do you want to (B)uy or (S)ell? [/yellow]").lower()
+                
+                if trade_type in ['b', 'buy']:
+                    # Buying logic
+                    max_quantity = min(
+                        self.player.cargo_capacity - self.player.cargo_used, 
+                        int(self.player.credits / price)
+                    )
+                    
+                    quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to buy? (Max: {max_quantity}): [/yellow]")
+                    
+                    try:
+                        quantity = int(quantity_str)
+                        
+                        if 0 < quantity <= max_quantity:
+                            total_cost = quantity * price
+                            
+                            # Perform the purchase
+                            if self.player.add_cargo(selected_commodity, quantity, price):
+                                self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.2f} credits[/green]")
+                            else:
+                                self.console.print("[red]Purchase failed. Check your cargo space or credits.[/red]")
+                        else:
+                            self.console.print("[red]Invalid quantity.[/red]")
+                    
+                    except ValueError:
+                        self.console.print("[red]Please enter a valid number.[/red]")
+                
+                elif trade_type in ['s', 'sell']:
+                    # Selling logic
+                    if selected_commodity not in self.player.cargo:
+                        self.console.print(f"[red]You don't have any {selected_commodity} to sell.[/red]")
+                        return
+                    
+                    # Get available quantity safely
+                    available_quantity = self.player.cargo.get(selected_commodity, {}).get('quantity', 0)
+                    
+                    quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to sell? (Max: {available_quantity}): [/yellow]")
+                    
+                    try:
+                        quantity = int(quantity_str)
+                        
+                        if 0 < quantity <= available_quantity:
+                            total_revenue = quantity * price
+                            
+                            # Perform the sale
+                            if self.player.sell_cargo(selected_commodity, quantity, price):
+                                self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.2f} credits[/green]")
+                            else:
+                                self.console.print("[red]Sale failed.[/red]")
+                        else:
+                            self.console.print("[red]Invalid quantity.[/red]")
+                    
+                    except ValueError:
+                        self.console.print("[red]Please enter a valid number.[/red]")
+                
+                else:
+                    self.console.print("[red]Invalid trade type. Choose Buy or Sell.[/red]")
+            
+            except ValueError:
+                self.console.print("[red]Please enter a valid number.[/red]")
+        
+        except Exception as e:
+            self.console.print(f"[red]Error in trading: {e}[/red]")
+            import traceback
+            traceback.print_exc()
+
+    def travel_to_new_planet(self):
+        possible_planets = [p for p in self.universe.planets if p != self.current_planet]
+        if possible_planets:
+            new_planet = random.choice(possible_planets)
+            self.current_planet = new_planet
+            self.console.print(f"Traveled to {new_planet.name}")
+        else:
+            self.console.print("No other planets to travel to")
+    
+    def check_market_prices(self):
+        market_overview = self.economy.get_market_overview()
+        self.console.print(market_overview)
+    
+    def upgrade_ship(self):
+        available_upgrades = self.tech_tree.get_available_upgrades()
+        self.console.print("Available Upgrades:")
+        for category, upgrades in available_upgrades.items():
+            self.console.print(f"\n{category}:")
+            for upgrade in upgrades:
+                self.console.print(f"- {upgrade['name']} (Cost: {upgrade['cost']} credits)")
+    
+    def view_technologies(self):
+        self.console.print("Current Technologies:")
+        for category, techs in self.tech_tree.technologies.items():
+            self.console.print(f"\n{category}:")
+            for tech_name, tech_info in techs.items():
+                self.console.print(f"- {tech_name} (Level {tech_info['level']})")
+
+def main():
+    try:
+        game = CargoHauler(difficulty=2)
+        game.start_game()
+    except Exception as e:
+        print(f"Error starting the game: {e}")
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    main()
+
+File name: src/player.py
+content of src/player.py
+import random
+
+class Player:
+    def __init__(self):
+        self.credits = 10000
+        self.cargo = {}
+        self.cargo_capacity = 100
+        self.cargo_used = 0
+        self.ship_level = 1
+        self.technologies = []
+    
+    def add_cargo(self, good, quantity, price):
+        """
+        Add cargo to the player's inventory
+        
+        Args:
+            good (str): Name of the commodity
+            quantity (int): Number of units to add
+            price (float): Price per unit
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        # Validate inputs
+        if not isinstance(good, str):
+            print(f"[ERROR] Invalid good type: {type(good)}")
+            return False
+        
+        try:
+            quantity = int(quantity)
+            price = float(price)
+        except (ValueError, TypeError):
+            print(f"[ERROR] Invalid quantity or price: {quantity}, {price}")
+            return False
+        
+        # Check cargo space
+        if self.cargo_used + quantity > self.cargo_capacity:
+            print("[ERROR] Not enough cargo space")
+            return False
+        
+        # Check credits
+        total_cost = quantity * price
+        if total_cost > self.credits:
+            print("[ERROR] Not enough credits")
+            return False
+        
+        # Add or update cargo
+        if good in self.cargo:
+            # Update existing cargo entry
+            existing_entry = self.cargo[good]
+            
+            # Ensure the entry is a dictionary
+            if not isinstance(existing_entry, dict):
+                existing_entry = {
+                    'quantity': 0,
+                    'buy_price': price
+                }
+            
+            # Update quantity and recalculate average buy price
+            total_quantity = existing_entry.get('quantity', 0) + quantity
+            total_value = (existing_entry.get('quantity', 0) * existing_entry.get('buy_price', price)) + (quantity * price)
+            
+            self.cargo[good] = {
+                'quantity': total_quantity,
+                'buy_price': total_value / total_quantity
+            }
+        else:
+            # Create new cargo entry
+            self.cargo[good] = {
+                'quantity': quantity,
+                'buy_price': price
+            }
+        
+        # Update player's state
+        self.cargo_used += quantity
+        self.credits -= total_cost
+        
+        return True
+    
+    def sell_cargo(self, good, quantity, price):
+        """
+        Sell cargo from the player's inventory
+        
+        Args:
+            good (str): Name of the commodity
+            quantity (int): Number of units to sell
+            price (float): Price per unit
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        # Validate inputs
+        if good not in self.cargo:
+            print(f"[ERROR] No {good} in cargo")
+            return False
+        
+        try:
+            quantity = int(quantity)
+            price = float(price)
+        except (ValueError, TypeError):
+            print(f"[ERROR] Invalid quantity or price: {quantity}, {price}")
+            return False
+        
+        # Check available quantity
+        cargo_entry = self.cargo[good]
+        
+        # Ensure cargo_entry is a dictionary
+        if not isinstance(cargo_entry, dict):
+            print(f"[ERROR] Invalid cargo entry for {good}")
+            return False
+        
+        available_quantity = cargo_entry.get('quantity', 0)
+        
+        if quantity > available_quantity:
+            print(f"[ERROR] Not enough {good} to sell")
+            return False
+        
+        # Calculate total revenue
+        total_revenue = quantity * price
+        
+        # Update cargo
+        cargo_entry['quantity'] -= quantity
+        
+        # Remove entry if quantity becomes zero
+        if cargo_entry['quantity'] == 0:
+            del self.cargo[good]
+        
+        # Update player's state
+        self.cargo_used -= quantity
+        self.credits += total_revenue
+        
+        return True
+    
+    def display_cargo(self):
+        """
+        Display current cargo inventory
+        """
+        print("Current Cargo:")
+        if not self.cargo:
+            print("  Empty")
+            return
+        
+        for good, details in self.cargo.items():
+            print(f"  {good}: {details.get('quantity', 0)} units (Avg. Buy Price: {details.get('buy_price', 0):.2f} credits)")
+    
+    def get_cargo_summary(self):
+        summary = []
+        for name, details in self.cargo.items():
+            summary.append({
+                'name': name,
+                'quantity': details['quantity'],
+                'buy_price': details['buy_price']
+            })
+        return summary
+
+File name: src/economy.py
+content of src/economy.py
+import random
+import json
+import pandas as pd
+import os
+
+class EconomySimulator:
+    def __init__(self, planets):
+        self.planets = planets
+        self.commodities = self.generate_commodities()
+    
+    def generate_commodities(self):
+        commodity_types = [
+            "raw_materials", 
+            "agricultural_goods", 
+            "technological_goods", 
+            "luxury_goods", 
+            "industrial_goods"
+        ]
+        
+        commodities = {}
+        for commodity in commodity_types:
+            commodities[commodity] = {
+                'base_price': random.uniform(50, 500),
+                'price_volatility': random.uniform(0.05, 0.2)
+            }
+        
+        return commodities
+    
+    def calculate_price(self, commodity, planet):
+        # Ensure the commodity exists in our commodities dictionary
+        if commodity not in self.commodities:
+            raise ValueError(f"Commodity {commodity} not found in market")
+        
+        # Safely extract commodity information
+        commodity_info = self.commodities[commodity]
+        
+        # Extract base price and volatility
+        base_price = commodity_info['base_price']
+        volatility = commodity_info['price_volatility']
+        
+        # Adjust price based on planet's economy and available resources
+        economy_multiplier = planet.economy_level
+        
+        # Check if the planet has this commodity in its resources
+        resource_multiplier = planet.resources.get(commodity, 0.5)
+        
+        # Calculate price variation
+        price_variation = random.uniform(-volatility, volatility)
+        
+        # Calculate final price
+        final_price = base_price * (1 + price_variation) * economy_multiplier * resource_multiplier
+        
+        return round(final_price, 2)
+    
+    def get_market_overview(self):
+        market_data = []
+        for planet in self.planets:
+            planet_prices = {
+                'Planet': planet.name,
+                'Economy Level': planet.economy_level
+            }
+            
+            for commodity in self.commodities:
+                planet_prices[commodity] = self.calculate_price(commodity, planet)
+            
+            market_data.append(planet_prices)
+        
+        return pd.DataFrame(market_data)
+    
+    def get_tradable_commodities(self):
+        # Flatten the commodities dictionary into a list
+        all_commodities = []
+        for category, commodities in self.commodities.items():
+            all_commodities.extend(commodities)
+        return all_commodities
+
+File name: src/events.py
+content of src/events.py
+import random
+
+class EventGenerator:
+    def __init__(self):
+        self.events = {
+            'trade_opportunity': {
+                'weight': 0.3,
+                'description': "Discovered a rare trade opportunity!"
+            },
+            'pirate_encounter': {
+                'weight': 0.2,
+                'description': "Pirates attempt to intercept your cargo!"
+            },
+            'market_crash': {
+                'weight': 0.1,
+                'description': "Sudden market crash affects commodity prices!"
+            },
+            'technological_breakthrough': {
+                'weight': 0.2,
+                'description': "A new technology has been discovered!"
+            }
+        }
+    
+    def generate_event(self):
+        # Weighted random event selection
+        events = list(self.events.keys())
+        weights = [self.events[event]['weight'] for event in events]
+        
+        selected_event = random.choices(events, weights=weights)[0]
+        return {
+            'type': selected_event,
+            'description': self.events[selected_event]['description']
+        }
+
+File name: src/technologies.py
+content of src/technologies.py
+class TechnologyTree:
+    def __init__(self):
+        self.technologies = {
+            'Propulsion': {
+                'Chemical Thrusters': {
+                    'level': 1,
+                    'cost': 1000,
+                    'effects': {
+                        'speed': 1.0,
+                        'fuel_efficiency': 0.8
+                    }
+                },
+                'Ion Drives': {
+                    'level': 2,
+                    'cost': 5000,
+                    'effects': {
+                        'speed': 1.5,
+                        'fuel_efficiency': 1.2
+                    }
+                }
+            },
+            'Cargo': {
+                'Basic Cargo Pods': {
+                    'level': 1,
+                    'cost': 1500,
+                    'effects': {
+                        'cargo_capacity': 100
+                    }
+                },
+                'Advanced Containers': {
+                    'level': 2,
+                    'cost': 7500,
+                    'effects': {
+                        'cargo_capacity': 250
+                    }
+                }
+            }
+        }
+    
+    def get_available_upgrades(self, current_tech=None):
+        available = {}
+        for category, techs in self.technologies.items():
+            available[category] = []
+            for tech_name, tech_info in techs.items():
+                if not current_tech or tech_info['level'] > current_tech.get(tech_name, {}).get('level', 0):
+                    available[category].append({
+                        'name': tech_name,
+                        'cost': tech_info['cost']
+                    })
+        return available
+
+File name: src/universe.py
+content of src/universe.py
+import random
+import json
+import networkx as nx
+
+class Planet:
+    def __init__(self, name, planet_type, economy_level):
+        self.name = name
+        self.type = planet_type
+        self.economy_level = economy_level
+        self.resources = self.generate_resources()
+    
+    def generate_resources(self):
+        # Align resource types with commodity types
+        resource_types = [
+            "raw_materials", 
+            "agricultural_goods", 
+            "technological_goods", 
+            "luxury_goods", 
+            "industrial_goods"
+        ]
+        
+        # Randomly select 3-4 resources and assign them a value
+        selected_resources = random.sample(resource_types, random.randint(3, 4))
+        return {
+            resource: random.uniform(0.1, 1.0) 
+            for resource in selected_resources
+        }
+
+class UniverseGenerator:
+    def __init__(self, difficulty=2):
+        self.difficulty = difficulty
+        self.planets = []
+        self.trade_network = nx.Graph()
+        self.generate_universe()
+    
+    def generate_universe(self):
+        planet_names = [
+            "New Terra", "Proxima", "Arcturus", "Orion Prime", 
+            "Sigma Outpost", "Epsilon Station", "Nova Haven", 
+            "Quantum Nexus", "Helios Prime", "Crimson Horizon"
+        ]
+        planet_types = [
+            "Desert", "Oceanic", "Industrial", "Agricultural", 
+            "High-Tech", "Mining", "Trading Hub", "Research Colony"
+        ]
+        
+        # Generate planets based on difficulty
+        num_planets = 5 + (self.difficulty * 2)
+        
+        for _ in range(num_planets):
+            # Ensure unique planet names
+            planet_name = random.choice(planet_names)
+            planet_names.remove(planet_name)
+            
+            planet = Planet(
+                name=planet_name,
+                planet_type=random.choice(planet_types),
+                economy_level=random.uniform(0.3, 1.0)
+            )
+            self.planets.append(planet)
+        
+        # Create trade network
+        self.create_trade_network()
+    
+    def create_trade_network(self):
+        # Fully connect planets for simplicity
+        for planet in self.planets:
+            self.trade_network.add_node(planet)
+        
+        for i in range(len(self.planets)):
+            for j in range(i+1, len(self.planets)):
+                # Add some randomness to connections
+                if random.random() > 0.3:
+                    self.trade_network.add_edge(
+                        self.planets[i], 
+                        self.planets[j], 
+                        distance=random.uniform(1, 10)
+                    )
+
+File name: data/planets.json
+content of data/planets.json
+{
+    "planets": [
+        {
+            "name": "New Terra",
+            "type": "Agricultural",
+            "economy_level": 0.8,
+            "resources": {
+                "Agricultural Goods": 0.9,
+                "Technology": 0.4,
+                "Minerals": 0.3
+            }
+        },
+        {
+            "name": "Proxima",
+            "type": "Industrial", 
+            "economy_level": 0.7,
+            "resources": {
+                "Manufactured Goods": 0.85,
+                "Rare Elements": 0.6,
+                "Technology": 0.7
+            }
+        },
+        {
+            "name": "Arcturus",
+            "type": "Mining",
+            "economy_level": 0.5,
+            "resources": {
+                "Minerals": 0.95,
+                "Rare Elements": 0.8,
+                "Agricultural Goods": 0.2
+            }
+        },
+        {
+            "name": "Orion Prime",
+            "type": "High-Tech",
+            "economy_level": 0.9,
+            "resources": {
+                "Technology": 0.95,
+                "Rare Elements": 0.7,
+                "Manufactured Goods": 0.6
+            }
+        },
+        {
+            "name": "Sigma Outpost",
+            "type": "Trading Hub",
+            "economy_level": 0.6,
+            "resources": {
+                "Manufactured Goods": 0.5,
+                "Agricultural Goods": 0.4,
+                "Minerals": 0.5
+            }
+        },
+        {
+            "name": "Epsilon Station",
+            "type": "Desert",
+            "economy_level": 0.4,
+            "resources": {
+                "Rare Elements": 0.5,
+                "Technology": 0.3,
+                "Minerals": 0.6
+            }
+        },
+        {
+            "name": "Nova Haven",
+            "type": "Oceanic",
+            "economy_level": 0.7,
+            "resources": {
+                "Agricultural Goods": 0.7,
+                "Manufactured Goods": 0.4,
+                "Technology": 0.5
+            }
+        }
+    ]
+}
+
+File name: data/commodities.json
+content of data/commodities.json
+{
+    "raw_materials": [
+        {
+            "name": "Minerals",
+            "base_price": 150.00,
+            "volume_per_unit": 2.5,
+            "rarity": "common",
+            "description": "Basic mineral resources used in manufacturing",
+            "regions": ["Mining Planets", "Industrial Worlds"],
+            "price_volatility": 0.15
+        },
+        {
+            "name": "Rare Metals",
+            "base_price": 750.00,
+            "volume_per_unit": 1.0,
+            "rarity": "rare",
+            "description": "Precious and rare metallic elements",
+            "regions": ["High-Tech Planets", "Frontier Worlds"],
+            "price_volatility": 0.25
+        },
+        {
+            "name": "Organic Compounds",
+            "base_price": 200.00,
+            "volume_per_unit": 1.5,
+            "rarity": "common", 
+            "description": "Chemical compounds derived from organic sources",
+            "regions": ["Agricultural Planets", "Research Stations"],
+            "price_volatility": 0.12
+        }
+    ],
+    "agricultural_goods": [
+        {
+            "name": "Grain",
+            "base_price": 75.00,
+            "volume_per_unit": 3.0,
+            "rarity": "common",
+            "description": "Basic food staple for space colonies",
+            "regions": ["Agricultural Planets", "Oceanic Worlds"],
+            "price_volatility": 0.10
+        },
+        {
+            "name": "Synthetic Nutrients",
+            "base_price": 250.00,
+            "volume_per_unit": 1.0,
+            "rarity": "uncommon",
+            "description": "Advanced nutritional supplements",
+            "regions": ["High-Tech Planets", "Space Stations"],
+            "price_volatility": 0.18
+        },
+        {
+            "name": "Exotic Spices",
+            "base_price": 500.00,
+            "volume_per_unit": 0.5,
+            "rarity": "rare",
+            "description": "Rare and valuable culinary ingredients",
+            "regions": ["Trading Hubs", "Frontier Worlds"],
+            "price_volatility": 0.30
+        }
+    ],
+    "technological_goods": [
+        {
+            "name": "Computer Components",
+            "base_price": 300.00,
+            "volume_per_unit": 1.0,
+            "rarity": "uncommon",
+            "description": "Advanced electronic components",
+            "regions": ["High-Tech Planets", "Research Stations"],
+            "price_volatility": 0.20
+        },
+        {
+            "name": "Advanced Robotics",
+            "base_price": 1200.00,
+            "volume_per_unit": 2.0,
+            "rarity": "rare",
+            "description": "Cutting-edge robotic systems",
+            "regions": ["Industrial Planets", "Research Stations"],
+            "price_volatility": 0.25
+        },
+        {
+            "name": "Data Crystals",
+            "base_price": 800.00,
+            "volume_per_unit": 0.5,
+            "rarity": "very_rare",
+            "description": "High-density information storage devices",
+            "regions": ["Research Stations", "High-Tech Worlds"],
+            "price_volatility": 0.35
+        }
+    ],
+    "luxury_goods": [
+        {
+            "name": "Exotic Artifacts",
+            "base_price": 2000.00,
+            "volume_per_unit": 0.3,
+            "rarity": "very_rare",
+            "description": "Rare cultural and historical items",
+            "regions": ["Trading Hubs", "Frontier Worlds"],
+            "price_volatility": 0.40
+        },
+        {
+            "name": "Synthetic Gemstones",
+            "base_price": 1500.00,
+            "volume_per_unit": 0.2,
+            "rarity": "rare",
+            "description": "Artificially created precious stones",
+            "regions": ["High-Tech Planets", "Trading Hubs"],
+            "price_volatility": 0.30
+        }
+    ],
+    "industrial_goods": [
+        {
+            "name": "Prefabricated Structures",
+            "base_price": 500.00,
+            "volume_per_unit": 5.0,
+            "rarity": "uncommon",
+            "description": "Modular construction components",
+            "regions": ["Industrial Planets", "Frontier Worlds"],
+            "price_volatility": 0.15
+        },
+        {
+            "name": "Industrial Machinery",
+            "base_price": 1000.00,
+            "volume_per_unit": 4.0,
+            "rarity": "rare",
+            "description": "Large-scale manufacturing equipment",
+            "regions": ["Industrial Planets", "Mining Worlds"],
+            "price_volatility": 0.20
+        }
+    ]
+}
+

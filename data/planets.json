@@ -12,7 +12,7 @@
         },
         {
             "name": "Proxima",
-            "type": "Industrial", 
+            "type": "Industrial",
             "economy_level": 0.7,
             "resources": {
                 "Manufactured Goods": 0.85,

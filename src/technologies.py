@@ -36,7 +36,7 @@ class TechnologyTree:
                 }
             }
         }
-    
+
     def get_available_upgrades(self, current_tech=None):
         available = {}
         for category, techs in self.technologies.items():
