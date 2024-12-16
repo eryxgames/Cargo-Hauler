@@ -193,6 +193,7 @@ class CargoHauler:
                 if new_planet != self.current_planet:
                     self.current_planet = new_planet
                     self.console.print(f"Traveled to {self.current_planet.name}")
+                    self.generate_random_quest()  # Generate new quests when traveling
                     self.handle_event(self.event_generator.generate_event())
                     self.end_turn()
                 else:
@@ -207,6 +208,7 @@ class CargoHauler:
         if new_planet != self.current_planet:
             self.current_planet = new_planet
             self.console.print(f"Traveled to {new_planet.name} using Quantum Drive")
+            self.generate_random_quest()  # Generate new quests when traveling
             self.handle_event(self.event_generator.generate_event())
             self.end_turn()
         else:
@@ -259,6 +261,7 @@ class CargoHauler:
 
         self.current_planet = target_planet
         self.console.print(f"Traveled to {target_planet.name} using trade route from {start_planet.name}")
+        self.generate_random_quest()  # Generate new quests when traveling
         self.handle_event(self.event_generator.generate_event())
         self.end_turn()
 
@@ -292,8 +295,10 @@ class CargoHauler:
         self.universe.planets.append(frontier_planet)
         self.current_planet = frontier_planet
         self.console.print(f"Traveled to {frontier_planet.name} using Frontier Jump")
+        self.generate_random_quest()  # Generate new quests when traveling
         self.handle_event(self.event_generator.generate_event())
         self.end_turn()
+
 
     def end_turn(self):
         self.console.print("\n[bold yellow]End of turn.[/bold yellow]")
@@ -559,29 +564,36 @@ class CargoHauler:
         else:
             max_quests = 3
 
-        # Randomly select a subset of quests to display
+        # Ensure we only sample as many quests as are available
         available_quests = random.sample(self.universe.quests, min(max_quests, len(self.universe.quests)))
 
         # Add quest system
         self.console.print("\nAvailable Quests:")
-        for i, quest in enumerate(available_quests, 1):
-            self.console.print(f"{i}. {quest['description']}")
-            self.console.print(f"   Backstory: {quest['backstory']}")
+        if not available_quests:
+            self.console.print("No quests available at this time.")
+        else:
+            for i, quest in enumerate(available_quests, 1):
+                self.console.print(f"{i}. {quest['description']}")
+                self.console.print(f"   Backstory: {quest['backstory']}")
 
-        quest_choice = self.console.input("[bold yellow]Enter the number of the quest to accept (or 'cancel'): [/bold yellow]")
-        if quest_choice.lower() == 'cancel':
-            return
+            quest_choice = self.console.input("[bold yellow]Enter the number of the quest to accept (or 'cancel'): [/bold yellow]")
+            if quest_choice.lower() == 'cancel':
+                return
 
-        try:
-            quest_index = int(quest_choice)
-            if 1 <= quest_index <= len(available_quests):
-                selected_quest = available_quests[quest_index - 1]
-                self.player.accept_quest(selected_quest)
-                self.universe.quests.remove(selected_quest)
-            else:
-                self.console.print("[bold red]Invalid choice![/bold red]")
-        except ValueError:
-            self.console.print("[bold red]Please enter a number![/bold red]")
+            try:
+                quest_index = int(quest_choice)
+                if 1 <= quest_index <= len(available_quests):
+                    selected_quest = available_quests[quest_index - 1]
+                    self.player.accept_quest(selected_quest)
+                    self.universe.quests.remove(selected_quest)
+                    # Clear available quests after accepting a quest
+                    self.universe.quests = []
+                else:
+                    self.console.print("[bold red]Invalid choice![/bold red]")
+            except ValueError:
+                self.console.print("[bold red]Please enter a number![/bold red]")
+
+
 
     def accept_quest(self, quest):
         # Check if the player has the required upgrades for passenger transport quests
@@ -598,7 +610,7 @@ class CargoHauler:
         self.player.accept_quest(quest)
 
     def generate_random_quest(self):
-        # Generate a random quest at the start of each player turn
+        # Determine the number of quests to generate based on the player's level
         if self.player.level <= 3:
             num_quests = 1
         elif self.player.level <= 10:
@@ -606,12 +618,14 @@ class CargoHauler:
         else:
             num_quests = 3
 
-        random_quests = random.sample(self.universe.quests, num_quests)
+        # Generate random quests and add them to the universe quests list
+        random_quests = random.sample(self.universe.quests, min(num_quests, len(self.universe.quests)))
         for quest in random_quests:
             self.console.print(f"\n[bold yellow]New Quest Available:[/bold yellow]")
             self.console.print(f"{quest['description']}")
             self.console.print(f"Backstory: {quest['backstory']}")
             self.universe.quests.append(quest)
+
 
 
 
