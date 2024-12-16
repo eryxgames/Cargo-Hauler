@@ -453,6 +453,58 @@ class CargoHauler:
         else:
             self.console.print("[bold red]Not enough fuel to travel![/bold red]")
 
+    def handle_event(self, event):
+        event_type = event['type']
+        description = event['description']
+        self.console.print(f"[bold yellow]Event:[/bold yellow] {description}")
+
+        if event_type == 'trade_opportunity':
+            # Implement trade opportunity logic
+            commodity = random.choice(list(self.economy.commodities.keys()))
+            price = self.economy.calculate_price(commodity, self.current_planet)
+            quantity = random.randint(10, 50)
+            self.player.add_cargo(commodity, quantity, price)
+            self.console.print(f"You discovered a rare trade opportunity and acquired {quantity} units of {commodity} at {price} credits each.")
+
+        elif event_type == 'pirate_encounter':
+            # Implement pirate encounter logic
+            loss = random.uniform(0.1, 0.3) * self.player.credits
+            self.player.credits -= loss
+            self.console.print(f"Pirates attacked! You lost {loss:.1f} credits.")
+
+        elif event_type == 'market_crash':
+            # Implement market crash logic
+            for commodity in self.economy.commodities:
+                self.economy.commodities[commodity]['base_price'] *= 0.5
+            self.console.print("A sudden market crash has reduced commodity prices by 50%.")
+
+        elif event_type == 'technological_breakthrough':
+            # Implement technological breakthrough logic
+            # For example, grant a free technology upgrade
+            available_upgrades = self.tech_tree.get_available_upgrades()
+            if available_upgrades:
+                category = random.choice(list(available_upgrades.keys()))
+                upgrade = random.choice(available_upgrades[category])
+                self.apply_upgrade_effects(upgrade)
+                self.console.print(f"You've made a technological breakthrough: {upgrade['name']} has been granted to you for free.")
+            else:
+                self.console.print("You've made a technological breakthrough, but no upgrades are available at this time.")
+
+        elif event_type == 'fuel_shortage':
+            # Implement fuel shortage logic
+            self.player.fuel_level *= 0.5
+            self.console.print("A fuel shortage has reduced your fuel level by 50%.")
+
+        elif event_type == 'cargo_loss':
+            # Implement cargo loss logic
+            if self.player.inventory:
+                commodity = random.choice(list(self.player.inventory.keys()))
+                loss_quantity = random.randint(1, self.player.inventory[commodity]['quantity'])
+                self.player.inventory[commodity]['quantity'] -= loss_quantity
+                self.console.print(f"You lost {loss_quantity} units of {commodity} due to an accident.")
+            else:
+                self.console.print("You narrowly avoided cargo loss as you have no cargo on board.")    
+    
     def calculate_distance(self, planet1, planet2):
         # Placeholder for actual distance calculation logic
         return random.uniform(1, 10)

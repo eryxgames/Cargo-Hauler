@@ -6,6 +6,7 @@ import json
 
 class Player:
     def __init__(self, console):
+        # Existing attributes
         self.console = console
         self.credits = 10000
         self.inventory = {}
@@ -16,21 +17,89 @@ class Player:
         self.total_spent = 0
         self.most_profitable_good = None
         self.most_profitable_route = None
-        self.life_support_expansion = 0  # Add life support expansion attribute
-        self.passenger_pod_capacity = 0  # Add passenger pod capacity attribute
-        self.cargo_capacity = 100  # Initial cargo capacity
-        self.cargo_used = 0  # Initial cargo used
-        self.level = 1  # Initial player level
-        self.experience = 0  # Initial experience points
-        self.active_quests = []  # List of active quests
-        self.ship_level = 1  # Initial ship level
-        self.ship_fuel_efficiency = 1.0  # Initial fuel efficiency
-        self.fuel_tank_capacity = 100  # Initial fuel tank capacity
-        self.fuel_level = 100  # Initial fuel level
-        self.total_fuel_used = 0  # Total fuel used
-        self.total_trips = 0  # Total trips
-        self.radiation_shield = False  # New ship upgrade
-        self.business_class_module = False  # New ship upgrade
+        self.life_support_expansion = 0
+        self.passenger_pod_capacity = 0
+        self.cargo_capacity = 100
+        self.cargo_used = 0
+        self.level = 1
+        self.experience = 0
+        self.active_quests = []
+        self.ship_level = 1
+        self.ship_fuel_efficiency = 1.0
+        self.fuel_tank_capacity = 100
+        self.fuel_level = 100
+        self.total_fuel_used = 0
+        self.total_trips = 0
+        self.radiation_shield = False
+        self.business_class_module = False
+        self.passengers = []
+
+    def add_passenger(self, passenger):
+        if len(self.passengers) < self.passenger_pod_capacity:
+            self.passengers.append(passenger)
+            return True
+        else:
+            return False
+
+    def remove_passenger(self, passenger):
+        if passenger in self.passengers:
+            self.passengers.remove(passenger)
+            return True
+        else:
+            return False
+
+    def view_passengers(self):
+        table = Table(title="Passengers On Board")
+        table.add_column("Name", style="cyan")
+        table.add_column("Type", style="magenta")
+        table.add_column("Destination", style="green")
+        table.add_column("Reward", style="yellow")
+
+        for passenger in self.passengers:
+            table.add_row(
+                passenger['name'],
+                passenger['type'],
+                passenger['destination'],
+                str(passenger['reward'])
+            )
+
+        self.console.print(table)
+
+    def update_trade_statistics(self, good, profit):
+        if profit > 0:
+            self.total_profit += profit
+            if self.most_profitable_good is None or profit > self.most_profitable_good['profit']:
+                self.most_profitable_good = {
+                    'good': good,
+                    'profit': profit
+                }
+        else:
+            self.total_loss += abs(profit)
+
+    def view_trade_statistics(self):
+        table = Table(title="Trade Statistics")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="magenta")
+
+        table.add_row("Total Profit", f"{self.total_profit:.1f} credits")
+        table.add_row("Total Loss", f"{self.total_loss:.1f} credits")
+        table.add_row("Total Spent", f"{self.total_spent:.1f} credits")
+        if self.most_profitable_good:
+            table.add_row("Most Profitable Good", f"{self.most_profitable_good['good']}: {self.most_profitable_good['profit']:.1f} credits")
+        else:
+            table.add_row("Most Profitable Good", "None")
+        if self.most_profitable_route:
+            table.add_row("Most Profitable Route", self.most_profitable_route)
+        else:
+            table.add_row("Most Profitable Route", "None")
+        table.add_row("Total Fuel Used", f"{self.total_fuel_used:.1f} units")
+        if self.total_trips > 0:
+            table.add_row("Average Fuel Consumption per Trip", f"{self.total_fuel_used / self.total_trips:.1f} units")
+        else:
+            table.add_row("Average Fuel Consumption per Trip", "0.0 units")
+        table.add_row("Passengers Transported", str(len(self.passengers)))
+
+        self.console.print(table)
 
     def add_cargo(self, good, quantity, price_per_unit):
         """
@@ -186,17 +255,6 @@ class Player:
             self.console.print("Ship level increased to 2")
         # Add more level benefits as needed
 
-    def update_trade_statistics(self, good, profit):
-        if profit > 0:
-            self.total_profit += profit
-            if self.most_profitable_good is None or profit > self.most_profitable_good['profit']:
-                self.most_profitable_good = {
-                    'good': good,
-                    'profit': profit
-                }
-        else:
-            self.total_loss += abs(profit)
-
     def accept_quest(self, quest):
         # Implement quest acceptance logic
         self.console.print(f"Quest accepted: {quest['description']}")
@@ -236,7 +294,7 @@ class Player:
             time.sleep(0.05)  # Adjust the speed as needed
         self.console.input()
 
-    def view_trade_statistics(self):
+    def view_trade_statistics1(self):
         self.console.print("Trade Statistics:")
         self.console.print(f"Total Profit: {self.total_profit:.1f} credits")
         self.console.print(f"Total Loss: {self.total_loss:.1f} credits")
@@ -271,14 +329,14 @@ class Player:
     def scan_spaceport(self):
         self.console.print("Spaceport Information:")
         current_planet = self.current_planet
-        table = Table(show_header=False, box=None)
-        table.add_column()
-        table.add_column()
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Attribute", style="cyan")
+        table.add_column("Value", style="magenta")
 
         table.add_row("Name", current_planet.name)
         table.add_row("Type", current_planet.type)
-        table.add_row("Economy Level", f"{current_planet.economy_level:.1f}")
-        resources_display = ", ".join([f"{r}: {v:.1f}" for r, v in current_planet.resources.items()])
+        table.add_row("Fuel Price", f"{self.economy.calculate_price('fuel', current_planet):.1f} credits")
+        resources_display = ", ".join([f"{r}: {v:.1f}" for r, v in current_planet.resources.items() if r != 'fuel'])
         table.add_row("Resources", resources_display)
         table.add_row("Status", current_planet.status)
         table.add_row("Characteristics", current_planet.characteristics)
@@ -291,29 +349,88 @@ class Player:
         self.console.print(table)
 
         # Check for quest completion
-        for quest in self.active_quests:
+        for quest in self.player.active_quests:
             if quest['conditions']['destination'] == current_planet.name:
                 self.console.print(f"[bold green]Quest completed: {quest['description']}[/bold green]")
-                self.complete_quest(quest)
+                self.player.complete_quest(quest)
+
+        # Determine the number of quests to display based on the player's level
+        if self.player.level <= 3:
+            max_quests = 1
+        elif self.player.level <= 10:
+            max_quests = 2
+        else:
+            max_quests = 3
+
+        # Ensure we only sample as many quests as are available
+        available_quests = random.sample(self.universe.quests, min(max_quests, len(self.universe.quests)))
 
         # Add quest system
         self.console.print("\nAvailable Quests:")
-        for i, quest in enumerate(self.universe.quests, 1):
-            self.console.print(f"{i}. {quest['description']}")
-            self.console.print(f"   Backstory: {quest['backstory']}")
+        if not available_quests:
+            self.console.print("No quests available at this time.")
+        else:
+            for i, quest in enumerate(available_quests, 1):
+                self.console.print(f"{i}. {quest['description']}")
+                self.console.print(f"   Backstory: {quest['backstory']}")
 
-        quest_choice = self.console.input("[bold yellow]Enter the number of the quest to accept (or 'cancel'): [/bold yellow]")
-        if quest_choice.lower() == 'cancel':
-            return
+            quest_choice = self.console.input("[bold yellow]Enter the number of the quest to accept (or 'cancel'): [/bold yellow]")
+            if quest_choice.lower() == 'cancel':
+                return
 
-        try:
-            quest_index = int(quest_choice)
-            if 1 <= quest_index <= len(self.universe.quests):
-                selected_quest = self.universe.quests[quest_index - 1]
-                self.accept_quest(selected_quest)
-                self.universe.quests.remove(selected_quest)
-            else:
-                self.console.print("[bold red]Invalid choice![/bold red]")
-        except ValueError:
-            self.console.print("[bold red]Please enter a number![/bold red]")
+            try:
+                quest_index = int(quest_choice)
+                if 1 <= quest_index <= len(available_quests):
+                    selected_quest = available_quests[quest_index - 1]
+                    self.player.accept_quest(selected_quest)
+                    self.universe.quests.remove(selected_quest)
+                    # Clear available quests after accepting a quest
+                    self.universe.quests = []
+                else:
+                    self.console.print("[bold red]Invalid choice![/bold red]")
+            except ValueError:
+                self.console.print("[bold red]Please enter a number![/bold red]")
 
+        # Display available passengers
+        self.console.print("\nAvailable Passengers:")
+        passengers = self.generate_available_passengers(current_planet)
+        if not passengers:
+            self.console.print("No passengers available at this time.")
+        else:
+            for i, passenger in enumerate(passengers, 1):
+                self.console.print(f"{i}. {passenger['type']} - Destination: {passenger['destination']}, Reward: {passenger['reward']} credits")
+
+            passenger_choice = self.console.input("[bold yellow]Enter the number of the passenger to pick up (or 'cancel'): [/bold yellow]")
+            if passenger_choice.lower() == 'cancel':
+                return
+
+            try:
+                passenger_index = int(passenger_choice)
+                if 1 <= passenger_index <= len(passengers):
+                    selected_passenger = passengers[passenger_index - 1]
+                    if self.player.passenger_pod_capacity >= len(self.player.passengers) + 1:
+                        self.player.add_passenger(selected_passenger)
+                        self.console.print(f"Picked up {selected_passenger['type']} heading to {selected_passenger['destination']}.")
+                    else:
+                        self.console.print("[bold red]Not enough passenger pod capacity![/bold red]")
+                else:
+                    self.console.print("[bold red]Invalid choice![/bold red]")
+            except ValueError:
+                self.console.print("[bold red]Please enter a number![/bold red]")
+
+    def generate_available_passengers(self, planet):
+        # Logic to generate available passengers based on planet and player's ship upgrades
+        passenger_types = ["Colonist", "Tourist", "Scientist"]
+        destinations = [p.name for p in self.universe.planets if p != planet]
+        passengers = []
+        for _ in range(random.randint(1, 5)):
+            passenger = {
+                "name": f"Passenger_{len(passengers)+1}",
+                "type": random.choice(passenger_types),
+                "destination": random.choice(destinations),
+                "reward": random.randint(100, 500)
+            }
+            passengers.append(passenger)
+        return passengers
+    
+    

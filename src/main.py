@@ -420,8 +420,19 @@ class CargoHauler:
             self.generate_random_quest()  # Generate new quests when traveling
             self.handle_event(self.event_generator.generate_event())
             self.end_turn()
+
+            # Check for passenger delivery
+            self.check_passenger_delivery()
         else:
             self.console.print("[bold red]Not enough fuel to travel![/bold red]")
+
+    def check_passenger_delivery(self):
+        arrived_passengers = [p for p in self.player.passengers if p['destination'] == self.current_planet.name]
+        for passenger in arrived_passengers:
+            reward = passenger['reward']
+            self.player.credits += reward
+            self.console.print(f"Delivered {passenger['type']} to {self.current_planet.name}. Received {reward} credits.")
+            self.player.remove_passenger(passenger)
 
     def handle_event(self, event):
         event_type = event['type']

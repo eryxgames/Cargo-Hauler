@@ -38,6 +38,39 @@
         }
     },
     "Life Support": {
+        "Basic Life Support Upgrade": {
+            "cost": 5000,
+            "level": 1,
+            "effects": {
+                "passenger_pod_capacity": 5
+            },
+            "category": "Life Support"
+        },
+        "Advanced Life Support Upgrade": {
+            "cost": 10000,
+            "level": 2,
+            "effects": {
+                "passenger_pod_capacity": 10
+            },
+            "requirements": ["Basic Life Support Upgrade"],
+            "category": "Life Support"
+        },
+        "Radiation Shield": {
+            "cost": 15000,
+            "level": 1,
+            "effects": {
+                "radiation_shield": true
+            },
+            "category": "Life Support"
+        },
+        "Business Class Module": {
+            "cost": 20000,
+            "level": 1,
+            "effects": {
+                "business_class_module": true
+            },
+            "category": "Passenger Pod"
+        },            
         "Life Support Expansion": {
             "level": 1,
             "cost": 5000,
