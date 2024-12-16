@@ -22,6 +22,8 @@ class Player:
         self.level = 1  # Initial player level
         self.experience = 0  # Initial experience points
         self.active_quests = []  # List of active quests
+        self.ship_level = 1  # Initial ship level
+
 
     def add_cargo(self, good, quantity, price_per_unit):
         """

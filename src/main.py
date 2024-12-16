@@ -564,11 +564,13 @@ class CargoHauler:
             quest_index = int(quest_choice)
             if 1 <= quest_index <= len(self.universe.quests):
                 selected_quest = self.universe.quests[quest_index - 1]
-                self.accept_quest(selected_quest)
+                self.player.accept_quest(selected_quest)
+                self.universe.quests.remove(selected_quest)
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
+
 
     def accept_quest(self, quest):
         # Check if the player has the required upgrades for passenger transport quests
@@ -586,13 +588,20 @@ class CargoHauler:
 
     def generate_random_quest(self):
         # Generate a random quest at the start of each player turn
-        num_quests = max(1, min(4, self.player.level // 3))  # Adjust the number of quests based on the player's level
+        if self.player.level <= 3:
+            num_quests = 1
+        elif self.player.level <= 10:
+            num_quests = 2
+        else:
+            num_quests = 3
+
         random_quests = random.sample(self.universe.quests, num_quests)
         for quest in random_quests:
             self.console.print(f"\n[bold yellow]New Quest Available:[/bold yellow]")
             self.console.print(f"{quest['description']}")
             self.console.print(f"Backstory: {quest['backstory']}")
             self.universe.quests.append(quest)
+
 
 def main():
     try:
