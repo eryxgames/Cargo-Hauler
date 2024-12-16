@@ -10,6 +10,10 @@ class Player:
         self.technologies = []
         self.experience = 0
         self.level = 1
+        self.total_profit = 0
+        self.total_loss = 0
+        self.most_profitable_good = None
+        self.most_profitable_route = None
 
     def add_cargo(self, good, quantity, price):
         """
@@ -124,6 +128,9 @@ class Player:
         # Gain experience
         self.gain_experience(profit)
 
+        # Update trade statistics
+        self.update_trade_statistics(good, profit)
+
         # Calculate total revenue
         total_revenue = quantity * price
 
@@ -183,3 +190,14 @@ class Player:
             self.ship_level += 1
             self.console.print("Ship level increased to 2")
         # Add more level benefits as needed
+
+    def update_trade_statistics(self, good, profit):
+        if profit > 0:
+            self.total_profit += profit
+            if self.most_profitable_good is None or profit > self.most_profitable_good['profit']:
+                self.most_profitable_good = {
+                    'good': good,
+                    'profit': profit
+                }
+        else:
+            self.total_loss += abs(profit)

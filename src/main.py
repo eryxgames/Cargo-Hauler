@@ -87,6 +87,7 @@ class CargoHauler:
                 "Upgrade Ship",
                 "View Technologies",
                 "View Storyline",
+                "View Trade Statistics",
                 "Quit Game"
             ]
 
@@ -111,6 +112,8 @@ class CargoHauler:
                 elif choice == 6:
                     self.view_storyline()
                 elif choice == 7:
+                    self.view_trade_statistics()
+                elif choice == 8:
                     self.game_over = True
                 else:
                     self.console.print("[bold red]Invalid choice![/bold red]")
@@ -145,6 +148,8 @@ class CargoHauler:
                 "Set Up Trade Route",
                 "Frontier Jump"
             ]
+            if self.player.trade_route:
+                travel_options.append("Use Trade Route")
             for i, option in enumerate(travel_options, 1):
                 self.console.print(f"{i}. {option}")
 
@@ -160,6 +165,8 @@ class CargoHauler:
                     self.set_up_trade_route()
                 elif travel_choice == 4:
                     self.frontier_jump()
+                elif travel_choice == 5 and self.player.trade_route:
+                    self.use_trade_route()
                 else:
                     self.console.print("[bold red]Invalid choice![/bold red]")
             except ValueError:
@@ -178,6 +185,7 @@ class CargoHauler:
             if 1 <= choice <= len(self.universe.planets):
                 self.current_planet = self.universe.planets[choice - 1]
                 self.console.print(f"Traveled to {self.current_planet.name}")
+                self.end_turn()
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
@@ -187,6 +195,7 @@ class CargoHauler:
         new_planet = random.choice(self.universe.planets)
         self.current_planet = new_planet
         self.console.print(f"Traveled to {new_planet.name} using Quantum Drive")
+        self.end_turn()
 
     def set_up_trade_route(self):
         self.console.print("\nSet up a trade route:")
@@ -219,6 +228,16 @@ class CargoHauler:
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
 
+    def use_trade_route(self):
+        if not self.player.trade_route:
+            self.console.print("[bold red]No trade route set![/bold red]")
+            return
+
+        start_planet, target_planet = self.player.trade_route
+        self.current_planet = target_planet
+        self.console.print(f"Traveled to {target_planet.name} using trade route from {start_planet.name}")
+        self.end_turn()
+
     def frontier_jump(self):
         frontier_planet_names = [
             "Frontier Asteroid Belt",
@@ -235,6 +254,11 @@ class CargoHauler:
         self.universe.planets.append(frontier_planet)
         self.current_planet = frontier_planet
         self.console.print(f"Traveled to {frontier_planet.name} using Frontier Jump")
+        self.end_turn()
+
+    def end_turn(self):
+        self.console.print("\n[bold yellow]End of turn.[/bold yellow]")
+        self.player_turn()
 
     def trade_goods(self):
         try:
@@ -363,32 +387,32 @@ class CargoHauler:
             return
 
         self.console.print("Available Upgrades:")
+        upgrade_options = []
         for category, upgrades in available_upgrades.items():
             self.console.print(f"\n{category}:")
             for upgrade in upgrades:
-                self.console.print(f"- {upgrade['name']} (Cost: {upgrade['cost']} credits)")
+                upgrade_options.append(upgrade)
+                self.console.print(f"{len(upgrade_options)}. {upgrade['name']} (Cost: {upgrade['cost']} credits)")
 
-        upgrade_choice = self.console.input("Enter the name of the upgrade to purchase (or 'cancel'): ")
+        upgrade_choice = self.console.input("Enter the number of the upgrade to purchase (or 'cancel'): ")
         if upgrade_choice.lower() == 'cancel':
             return
 
-        purchased = False
-        for category in available_upgrades:
-            for upgrade in available_upgrades[category]:
-                if upgrade['name'].lower() == upgrade_choice.lower():
-                    if self.player.credits >= upgrade['cost']:
-                        self.player.credits -= upgrade['cost']
-                        # Apply upgrade effects
-                        self.apply_upgrade(upgrade)
-                        self.console.print(f"Purchased {upgrade['name']} for {upgrade['cost']} credits.")
-                        purchased = True
-                    else:
-                        self.console.print("Insufficient credits to purchase this upgrade.")
-                    break
-            if purchased:
-                break
-        if not purchased:
-            self.console.print("Upgrade not found.")
+        try:
+            upgrade_index = int(upgrade_choice)
+            if 1 <= upgrade_index <= len(upgrade_options):
+                selected_upgrade = upgrade_options[upgrade_index - 1]
+                if self.player.credits >= selected_upgrade['cost']:
+                    self.player.credits -= selected_upgrade['cost']
+                    # Apply upgrade effects
+                    self.apply_upgrade(selected_upgrade)
+                    self.console.print(f"Purchased {selected_upgrade['name']} for {selected_upgrade['cost']} credits.")
+                else:
+                    self.console.print("Insufficient credits to purchase this upgrade.")
+            else:
+                self.console.print("[bold red]Invalid choice![/bold red]")
+        except ValueError:
+            self.console.print("[bold red]Please enter a number![/bold red]")
 
     def apply_upgrade(self, upgrade):
         category = upgrade['category']
@@ -421,6 +445,13 @@ class CargoHauler:
 
     def get_storyline(self):
         return self.storyline.get_story_up_to_level(self.player.level)
+
+    def view_trade_statistics(self):
+        self.console.print("Trade Statistics:")
+        self.console.print(f"Total Profit: {self.player.total_profit} credits")
+        self.console.print(f"Total Loss: {self.player.total_loss} credits")
+        self.console.print(f"Most Profitable Good: {self.player.most_profitable_good}")
+        self.console.print(f"Most Profitable Trade Route: {self.player.most_profitable_route}")
 
 def main():
     try:

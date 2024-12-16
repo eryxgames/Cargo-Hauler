@@ -45,6 +45,7 @@ class TechnologyTree:
                 if not current_tech or tech_info['level'] > current_tech.get(tech_name, {}).get('level', 0):
                     available[category].append({
                         'name': tech_name,
-                        'cost': tech_info['cost']
+                        'cost': tech_info['cost'],
+                        'category': category
                     })
         return available
