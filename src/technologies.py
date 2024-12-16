@@ -18,6 +18,7 @@ class TechnologyTree:
                     available[category].append({
                         'name': tech_name,
                         'cost': tech_info['cost'],
-                        'category': tech_info['category']
+                        'category': tech_info['category'],
+                        'effects': tech_info['effects']
                     })
         return available

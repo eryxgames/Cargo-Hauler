@@ -241,6 +241,11 @@ class Player:
         self.console.print(f"Total Spent: {self.total_spent:.1f} credits")
         self.console.print(f"Most Profitable Good: {self.most_profitable_good}")
         self.console.print(f"Most Profitable Trade Route: {self.most_profitable_route}")
+        self.console.print(f"Total Fuel Used: {self.total_fuel_used:.1f} units")
+        if self.total_trips > 0:
+            self.console.print(f"Average Fuel Consumption per Trip: {self.total_fuel_used / self.total_trips:.1f} units")
+        else:
+            self.console.print(f"Average Fuel Consumption per Trip: 0.0 units")
 
         # Display a table of trade history
         table = Table(title="Trade History")

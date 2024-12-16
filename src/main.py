@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress
 import time
+import json  # Ensure json is imported
 
 # Add the project root to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -72,7 +73,7 @@ class CargoHauler:
                 table.add_row("Current Planet", self.current_planet.name)
                 table.add_row("Credits", f"{self.player.credits:.1f}")
                 table.add_row("Cargo Space", f"{self.player.cargo_used}/{self.player.cargo_capacity}")
-                table.add_row("Fuel Level", f"{self.player.fuel_level}/{self.player.fuel_tank_capacity}")
+                table.add_row("Fuel Level", f"{self.player.fuel_level:.1f}/{self.player.fuel_tank_capacity}")
 
                 self.console.print(table)
                 self.status_changed = False
@@ -302,11 +303,11 @@ class CargoHauler:
         distance = self.calculate_distance(self.current_planet, planet)
         fuel_consumption = distance * self.player.ship_fuel_efficiency
         if self.player.fuel_level >= fuel_consumption:
-            self.player.fuel_level -= fuel_consumption
-            self.player.total_fuel_used += fuel_consumption
+            self.player.fuel_level = round(self.player.fuel_level - fuel_consumption, 1)
+            self.player.total_fuel_used = round(self.player.total_fuel_used + fuel_consumption, 1)
             self.player.total_trips += 1
             self.current_planet = planet
-            self.console.print(f"Traveled to {planet.name} using {fuel_consumption} units of fuel.")
+            self.console.print(f"Traveled to {planet.name} using {fuel_consumption:.1f} units of fuel.")
             self.generate_random_quest()  # Generate new quests when traveling
             self.handle_event(self.event_generator.generate_event())
             self.end_turn()
@@ -442,7 +443,17 @@ class CargoHauler:
 
     def check_market_prices(self):
         market_overview = self.economy.get_market_overview()
-        self.console.print(market_overview)
+        table = Table(title="Market Prices Overview")
+        table.add_column("Planet", style="cyan")
+        table.add_column("Economy Level", style="magenta")
+        for commodity in self.economy.commodities:
+            table.add_column(commodity, style="green")
+
+        for index, row in market_overview.iterrows():
+            row_style = "blue" if row['Planet'] == self.current_planet.name else "default"
+            table.add_row(row['Planet'], str(row['Economy Level']), *[str(row[commodity]) for commodity in self.economy.commodities], style=row_style)
+
+        self.console.print(table)
 
     def upgrade_ship(self):
         available_upgrades = self.tech_tree.get_available_upgrades()
@@ -534,8 +545,11 @@ class CargoHauler:
         self.console.print(f"Total Spent: {self.player.total_spent:.1f} credits")
         self.console.print(f"Most Profitable Good: {self.player.most_profitable_good}")
         self.console.print(f"Most Profitable Trade Route: {self.player.most_profitable_route}")
-        self.console.print(f"Total Fuel Used: {self.player.total_fuel_used} units")
-        self.console.print(f"Average Fuel Consumption per Trip: {self.player.total_fuel_used / self.player.total_trips:.2f} units")
+        self.console.print(f"Total Fuel Used: {self.player.total_fuel_used:.1f} units")
+        if self.player.total_trips > 0:
+            self.console.print(f"Average Fuel Consumption per Trip: {self.player.total_fuel_used / self.player.total_trips:.1f} units")
+        else:
+            self.console.print(f"Average Fuel Consumption per Trip: 0.0 units")
 
         # Display a table of trade history
         table = Table(title="Trade History")
@@ -625,54 +639,40 @@ class CargoHauler:
         self.console.print("Ship Customization:")
         self.console.print("Allocate resources to different ship components:")
         components = [
-            "Cargo Capacity",
-            "Fuel Efficiency",
-            "Ship Speed",
-            "Life Support"
+            ("Cargo Capacity", 5000),
+            ("Fuel Efficiency", 3000),
+            ("Ship Speed", 2000),
+            ("Life Support", 4000)
         ]
-        for i, component in enumerate(components, 1):
-            self.console.print(f"{i}. {component}")
+        for i, (component, price) in enumerate(components, 1):
+            self.console.print(f"{i}. {component} (Cost: {price:.1f} credits)")
 
         choice = self.console.input("[bold yellow]Enter the number of the component to upgrade: [/bold yellow]")
 
         try:
             choice = int(choice)
-            if choice == 1:
-                self.upgrade_cargo_capacity()
-            elif choice == 2:
-                self.upgrade_fuel_efficiency()
-            elif choice == 3:
-                self.upgrade_ship_speed()
-            elif choice == 4:
-                self.upgrade_life_support()
+            if 1 <= choice <= len(components):
+                component, price = components[choice - 1]
+                if self.player.credits >= price:
+                    self.player.credits -= price
+                    if component == "Cargo Capacity":
+                        self.player.cargo_capacity += 50
+                        self.console.print(f"Cargo capacity increased to {self.player.cargo_capacity}")
+                    elif component == "Fuel Efficiency":
+                        self.player.ship_fuel_efficiency += 0.1
+                        self.console.print(f"Fuel efficiency increased to {self.player.ship_fuel_efficiency}")
+                    elif component == "Ship Speed":
+                        self.player.ship_speed += 0.1
+                        self.console.print(f"Ship speed increased to {self.player.ship_speed}")
+                    elif component == "Life Support":
+                        self.player.life_support_expansion += 10
+                        self.console.print(f"Life support capacity increased to {self.player.life_support_expansion}")
+                else:
+                    self.console.print("Insufficient credits to purchase this upgrade.")
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
-
-    def upgrade_cargo_capacity(self):
-        self.console.print("Upgrading Cargo Capacity...")
-        # Implement cargo capacity upgrade logic
-        self.player.cargo_capacity += 50
-        self.console.print(f"Cargo capacity increased to {self.player.cargo_capacity}")
-
-    def upgrade_fuel_efficiency(self):
-        self.console.print("Upgrading Fuel Efficiency...")
-        # Implement fuel efficiency upgrade logic
-        self.player.ship_fuel_efficiency += 0.1
-        self.console.print(f"Fuel efficiency increased to {self.player.ship_fuel_efficiency}")
-
-    def upgrade_ship_speed(self):
-        self.console.print("Upgrading Ship Speed...")
-        # Implement ship speed upgrade logic
-        self.player.ship_speed += 0.1
-        self.console.print(f"Ship speed increased to {self.player.ship_speed}")
-
-    def upgrade_life_support(self):
-        self.console.print("Upgrading Life Support...")
-        # Implement life support upgrade logic
-        self.player.life_support_expansion += 10
-        self.console.print(f"Life support capacity increased to {self.player.life_support_expansion}")
 
     def save_game(self, filename):
         game_state = {
