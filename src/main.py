@@ -5,6 +5,7 @@ import random
 import traceback
 from rich.console import Console
 from rich.table import Table
+from rich.progress import Progress
 import time
 
 # Add the project root to the Python path
@@ -50,6 +51,7 @@ class CargoHauler:
         while not self.game_over:
             try:
                 self.display_status()
+                self.generate_random_quest()
                 self.player_turn()
             except KeyboardInterrupt:
                 self.console.print("\n[yellow]Game interrupted. Exiting...[/yellow]")
@@ -68,7 +70,7 @@ class CargoHauler:
                 table.add_column("Value", style="magenta")
 
                 table.add_row("Current Planet", self.current_planet.name)
-                table.add_row("Credits", str(self.player.credits))
+                table.add_row("Credits", f"{self.player.credits:.1f}")
                 table.add_row("Cargo Space", f"{self.player.cargo_used}/{self.player.cargo_capacity}")
 
                 self.console.print(table)
@@ -86,6 +88,7 @@ class CargoHauler:
                 "View Technologies",
                 "View Storyline",
                 "View Trade Statistics",
+                "Scan Spaceport",
                 "Quit Game"
             ]
 
@@ -112,6 +115,8 @@ class CargoHauler:
                 elif choice == 7:
                     self.view_trade_statistics()
                 elif choice == 8:
+                    self.scan_spaceport()
+                elif choice == 9:
                     self.game_over = True
                 else:
                     self.console.print("[bold red]Invalid choice![/bold red]")
@@ -147,7 +152,9 @@ class CargoHauler:
                 "Frontier Jump"
             ]
             if self.player.trade_route:
-                travel_options.append("Use Trade Route")
+                start_planet, target_planet = self.player.trade_route
+                travel_options.append(f"Use Trade Route ({start_planet.name}�{target_planet.name})")
+
             for i, option in enumerate(travel_options, 1):
                 self.console.print(f"{i}. {option}")
 
@@ -241,13 +248,18 @@ class CargoHauler:
             return
 
         start_planet, target_planet = self.player.trade_route
-        if target_planet != self.current_planet:
-            self.current_planet = target_planet
-            self.console.print(f"Traveled to {target_planet.name} using trade route from {start_planet.name}")
-            self.handle_event(self.event_generator.generate_event())
-            self.end_turn()
-        else:
+        if self.current_planet != start_planet:
+            self.console.print("[bold red]You are not at the start planet of this trade route![/bold red]")
+            return
+
+        if target_planet == self.current_planet:
             self.console.print("[bold red]You are already at this planet![/bold red]")
+            return
+
+        self.current_planet = target_planet
+        self.console.print(f"Traveled to {target_planet.name} using trade route from {start_planet.name}")
+        self.handle_event(self.event_generator.generate_event())
+        self.end_turn()
 
     def frontier_jump(self):
         frontier_planet_names = [
@@ -260,7 +272,21 @@ class CargoHauler:
         frontier_planet = Planet(
             name=frontier_planet_name,
             planet_type="Frontier",
-            economy_level=random.uniform(0.3, 1.0)
+            economy_level=random.uniform(0.3, 1.0),
+            resources=self.universe.generate_resources(),
+            status="Stable",
+            characteristics="Neutral",
+            demographics={
+                "Population": random.randint(1000, 10000),
+                "Cyborgs": random.randint(1, 100),
+                "Androids": random.randint(1, 100),
+                "Robots": random.randint(1, 100)
+            },
+            planet_class="Asteroid Belt",
+            moons=0,
+            geology="Rocky",
+            climate="Harsh",
+            history=self.universe.generate_history(frontier_planet_name, "Frontier", "Stable", "Neutral", {"Population": random.randint(1000, 10000), "Cyborgs": random.randint(1, 100), "Androids": random.randint(1, 100), "Robots": random.randint(1, 100)}, "Asteroid Belt", 0, "Rocky", "Harsh")
         )
         self.universe.planets.append(frontier_planet)
         self.current_planet = frontier_planet
@@ -300,7 +326,7 @@ class CargoHauler:
                         'name': commodity,
                         'price': price
                     }
-                    self.console.print(f"{i}. {commodity}: {price:.2f} credits")
+                    self.console.print(f"{i}. {commodity}: {price:.1f} credits")
                 except Exception as price_error:
                     self.console.print(f"[red]Error calculating price for {commodity}: {price_error}[/red]")
 
@@ -341,7 +367,7 @@ class CargoHauler:
 
                             # Perform the purchase
                             if self.player.add_cargo(selected_commodity, quantity, price):
-                                self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.2f} credits[/green]")
+                                self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.1f} credits[/green]")
                                 self.status_changed = True
                             else:
                                 self.console.print("[red]Purchase failed. Check your cargo space or credits.[/red]")
@@ -353,12 +379,12 @@ class CargoHauler:
 
                 elif trade_type in ['s', 'sell']:
                     # Selling logic
-                    if selected_commodity not in self.player.cargo:
+                    if selected_commodity not in self.player.inventory:
                         self.console.print(f"[red]You don't have any {selected_commodity} to sell.[/red]")
                         return
 
                     # Get available quantity safely
-                    available_quantity = self.player.cargo.get(selected_commodity, {}).get('quantity', 0)
+                    available_quantity = self.player.inventory.get(selected_commodity, {}).get('quantity', 0)
 
                     quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to sell? (Max: {available_quantity}): [/yellow]")
 
@@ -370,7 +396,7 @@ class CargoHauler:
 
                             # Perform the sale
                             if self.player.sell_cargo(selected_commodity, quantity, price):
-                                self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.2f} credits[/green]")
+                                self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.1f} credits[/green]")
                                 self.status_changed = True
                             else:
                                 self.console.print("[red]Sale failed.[/red]")
@@ -407,7 +433,7 @@ class CargoHauler:
             self.console.print(f"\n{category}:")
             for upgrade in upgrades:
                 upgrade_options.append(upgrade)
-                self.console.print(f"{len(upgrade_options)}. {upgrade['name']} (Cost: {upgrade['cost']} credits)")
+                self.console.print(f"{len(upgrade_options)}. {upgrade['name']} (Cost: {upgrade['cost']:.1f} credits)")
 
         upgrade_choice = self.console.input("Enter the number of the upgrade to purchase (or 'cancel'): ")
         if upgrade_choice.lower() == 'cancel':
@@ -421,7 +447,7 @@ class CargoHauler:
                     self.player.credits -= selected_upgrade['cost']
                     # Apply upgrade effects
                     self.apply_upgrade(selected_upgrade)
-                    self.console.print(f"Purchased {selected_upgrade['name']} for {selected_upgrade['cost']} credits.")
+                    self.console.print(f"Purchased {selected_upgrade['name']} for {selected_upgrade['cost']:.1f} credits.")
                     self.status_changed = True
                 else:
                     self.console.print("Insufficient credits to purchase this upgrade.")
@@ -441,6 +467,14 @@ class CargoHauler:
         elif category == 'Cargo':
             self.player.cargo_capacity = effects['cargo_capacity']
             self.console.print(f"Cargo capacity increased to {self.player.cargo_capacity}")
+            # Increase cost for subsequent upgrades of the same type
+            self.tech_tree.technologies[category][upgrade_name]['cost'] += 500
+        elif category == 'Life Support':
+            self.player.life_support_expansion = effects['life_support_capacity']
+            self.console.print(f"Life support capacity increased to {self.player.life_support_expansion}")
+        elif category == 'Passenger Pod':
+            self.player.passenger_pod_capacity = effects['passenger_pod_capacity']
+            self.console.print(f"Passenger pod capacity increased to {self.player.passenger_pod_capacity}")
         # Add more upgrade categories and effects as needed
 
     def view_technologies(self):
@@ -471,10 +505,96 @@ class CargoHauler:
 
     def view_trade_statistics(self):
         self.console.print("Trade Statistics:")
-        self.console.print(f"Total Profit: {self.player.total_profit} credits")
-        self.console.print(f"Total Loss: {self.player.total_loss} credits")
+        self.console.print(f"Total Profit: {self.player.total_profit:.1f} credits")
+        self.console.print(f"Total Loss: {self.player.total_loss:.1f} credits")
+        self.console.print(f"Total Spent: {self.player.total_spent:.1f} credits")
         self.console.print(f"Most Profitable Good: {self.player.most_profitable_good}")
         self.console.print(f"Most Profitable Trade Route: {self.player.most_profitable_route}")
+
+        # Display a table of trade history
+        table = Table(title="Trade History")
+        table.add_column("Transaction ID", style="cyan")
+        table.add_column("Good", style="magenta")
+        table.add_column("Quantity", style="green")
+        table.add_column("Price per Unit", style="yellow")
+        table.add_column("Total", style="bold")
+
+        for transaction in self.player.trade_history:
+            table.add_row(
+                str(transaction['id']),
+                transaction['good'],
+                str(transaction['quantity']),
+                str(transaction['price_per_unit']),
+                str(transaction['total'])
+            )
+
+        self.console.print(table)
+
+    def scan_spaceport(self):
+        self.console.print("Spaceport Information:")
+        current_planet = self.current_planet
+        table = Table(show_header=False, box=None)
+        table.add_column()
+        table.add_column()
+
+        table.add_row("Name", current_planet.name)
+        table.add_row("Type", current_planet.type)
+        table.add_row("Economy Level", f"{current_planet.economy_level:.1f}")
+        resources_display = ", ".join([f"{r}: {v:.1f}" for r, v in current_planet.resources.items()])
+        table.add_row("Resources", resources_display)
+        table.add_row("Status", current_planet.status)
+        table.add_row("Characteristics", current_planet.characteristics)
+        demographics_display = f"Population: {current_planet.demographics['Population']}, Cyborgs: {current_planet.demographics['Cyborgs']}, Androids: {current_planet.demographics['Androids']}, Robots: {current_planet.demographics['Robots']}"
+        table.add_row("Demographics", demographics_display)
+        description_display = f"Class: {current_planet.planet_class}, Moons: {current_planet.moons}, Geology: {current_planet.geology}, Climate: {current_planet.climate}"
+        table.add_row("Description and Environment", description_display)
+        table.add_row("History", current_planet.history)
+
+        self.console.print(table)
+
+        # Add quest system
+        self.console.print("\nAvailable Quests:")
+        for i, quest in enumerate(self.universe.quests, 1):
+            self.console.print(f"{i}. {quest['description']}")
+            self.console.print(f"   Backstory: {quest['backstory']}")
+
+        quest_choice = self.console.input("[bold yellow]Enter the number of the quest to accept (or 'cancel'): [/bold yellow]")
+        if quest_choice.lower() == 'cancel':
+            return
+
+        try:
+            quest_index = int(quest_choice)
+            if 1 <= quest_index <= len(self.universe.quests):
+                selected_quest = self.universe.quests[quest_index - 1]
+                self.accept_quest(selected_quest)
+            else:
+                self.console.print("[bold red]Invalid choice![/bold red]")
+        except ValueError:
+            self.console.print("[bold red]Please enter a number![/bold red]")
+
+    def accept_quest(self, quest):
+        # Check if the player has the required upgrades for passenger transport quests
+        if quest['type'] == 'passenger_transport':
+            if self.player.passenger_pod_capacity < quest['conditions']['quantity']:
+                self.console.print("[bold red]You do not have enough passenger pod capacity to accept this quest.[/bold red]")
+                return
+            if self.player.life_support_expansion < quest['conditions']['quantity']:
+                self.console.print("[bold red]You do not have enough life support expansion to accept this quest.[/bold red]")
+                return
+
+        # Accept the quest
+        self.console.print(f"Quest accepted: {quest['description']}")
+        self.player.accept_quest(quest)
+
+    def generate_random_quest(self):
+        # Generate a random quest at the start of each player turn
+        num_quests = max(1, self.player.level // 2)  # Adjust the number of quests based on the player's level
+        random_quests = random.sample(self.universe.quests, num_quests)
+        for quest in random_quests:
+            self.console.print(f"\n[bold yellow]New Quest Available:[/bold yellow]")
+            self.console.print(f"{quest['description']}")
+            self.console.print(f"Backstory: {quest['backstory']}")
+            self.universe.quests.append(quest)
 
 def main():
     try:

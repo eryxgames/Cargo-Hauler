@@ -38,6 +38,24 @@ class TechnologyTree:
                     },
                     'category': 'Cargo'
                 }
+            },
+            'Life Support': {
+                'Life Support Expansion': {
+                    'level': 1,
+                    'cost': 5000,
+                    'effects': {
+                        'life_support_capacity': 50
+                    },
+                    'category': 'Life Support'
+                },
+                'Passenger Pod': {
+                    'level': 1,
+                    'cost': 5000,
+                    'effects': {
+                        'passenger_pod_capacity': 50
+                    },
+                    'category': 'Passenger Pod'
+                }
             }
         }
 

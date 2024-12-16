@@ -50,7 +50,7 @@ class EconomySimulator:
         # Calculate final price
         final_price = base_price * (1 + price_variation) * economy_multiplier * resource_multiplier
 
-        return round(final_price, 2)
+        return round(final_price, 1)
 
     def get_market_overview(self):
         market_data = []

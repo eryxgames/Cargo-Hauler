@@ -1,0 +1,48 @@
+{
+    "quests": [
+        {
+            "type": "passenger_transport",
+            "description": "Transport 15 passengers to Orion Prime. The passengers are a group of scientists heading to a research conference.",
+            "reward": 4000,
+            "conditions": {
+                "destination": "Orion Prime",
+                "cargo_type": "passengers",
+                "quantity": 15
+            },
+            "backstory": "A group of renowned scientists are traveling to Orion Prime for a groundbreaking conference on interstellar travel. Ensure their safe passage."
+        },
+        {
+            "type": "contraband_delivery",
+            "description": "Deliver a mysterious package to Sigma Outpost. The contents are unknown, but the reward is high.",
+            "reward": 5000,
+            "conditions": {
+                "destination": "Sigma Outpost",
+                "cargo_type": "contraband",
+                "quantity": 1
+            },
+            "backstory": "A shadowy figure has hired you to deliver a mysterious package to Sigma Outpost. The contents are unknown, but the reward is too good to pass up."
+        },
+        {
+            "type": "medical_supplies_delivery",
+            "description": "Transport medical supplies to Nova Haven. The colony is in desperate need of medical aid.",
+            "reward": 3000,
+            "conditions": {
+                "destination": "Nova Haven",
+                "cargo_type": "medical_supplies",
+                "quantity": 20
+            },
+            "backstory": "Nova Haven is suffering from a severe medical crisis. Deliver the much-needed supplies to save lives and earn a hefty reward."
+        },
+        {
+            "type": "materials_transport",
+            "description": "Transport raw materials to Epsilon Station. The station is expanding and needs resources.",
+            "reward": 2000,
+            "conditions": {
+                "destination": "Epsilon Station",
+                "cargo_type": "raw_materials",
+                "quantity": 10
+            },
+            "backstory": "Epsilon Station is undergoing a major expansion. Transport the necessary raw materials to support their growth."
+        }
+    ]
+}
