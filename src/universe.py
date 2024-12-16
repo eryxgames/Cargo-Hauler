@@ -149,5 +149,11 @@ class UniverseGenerator:
             self.quests = quest_data['quests']
 
     def generate_random_quest(self):
-        # Generate a random quest from the loaded quests
-        return random.choice(self.quests)
+        # Generate a random quest at the start of each player turn
+        num_quests = max(1, min(4, self.player.level // 3))  # Adjust the number of quests based on the player's level
+        random_quests = random.sample(self.quests, num_quests)
+        for quest in random_quests:
+            self.console.print(f"\n[bold yellow]New Quest Available:[/bold yellow]")
+            self.console.print(f"{quest['description']}")
+            self.console.print(f"Backstory: {quest['backstory']}")
+            self.quests.append(quest)

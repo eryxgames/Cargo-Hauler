@@ -153,7 +153,7 @@ class CargoHauler:
             ]
             if self.player.trade_route:
                 start_planet, target_planet = self.player.trade_route
-                travel_options.append(f"Use Trade Route ({start_planet.name}�{target_planet.name})")
+                travel_options.append(f"Use Trade Route ({start_planet.name} → {target_planet.name})")
 
             for i, option in enumerate(travel_options, 1):
                 self.console.print(f"{i}. {option}")
@@ -446,7 +446,7 @@ class CargoHauler:
                 if self.player.credits >= selected_upgrade['cost']:
                     self.player.credits -= selected_upgrade['cost']
                     # Apply upgrade effects
-                    self.apply_upgrade(selected_upgrade)
+                    self.apply_upgrade_effects(selected_upgrade)
                     self.console.print(f"Purchased {selected_upgrade['name']} for {selected_upgrade['cost']:.1f} credits.")
                     self.status_changed = True
                 else:
@@ -456,26 +456,18 @@ class CargoHauler:
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
 
-    def apply_upgrade(self, upgrade):
+    def apply_upgrade_effects(self, upgrade):
         category = upgrade['category']
         upgrade_name = upgrade['name']
         effects = upgrade['effects']
 
-        if category == 'Propulsion':
-            self.player.ship_level += 1
-            self.console.print(f"Ship level increased to {self.player.ship_level}")
-        elif category == 'Cargo':
+        if category == 'cargo':
             self.player.cargo_capacity = effects['cargo_capacity']
             self.console.print(f"Cargo capacity increased to {self.player.cargo_capacity}")
-            # Increase cost for subsequent upgrades of the same type
-            self.tech_tree.technologies[category][upgrade_name]['cost'] += 500
-        elif category == 'Life Support':
-            self.player.life_support_expansion = effects['life_support_capacity']
-            self.console.print(f"Life support capacity increased to {self.player.life_support_expansion}")
-        elif category == 'Passenger Pod':
-            self.player.passenger_pod_capacity = effects['passenger_pod_capacity']
-            self.console.print(f"Passenger pod capacity increased to {self.player.passenger_pod_capacity}")
-        # Add more upgrade categories and effects as needed
+        elif category == 'ship_level':
+            self.player.ship_level += 1
+            self.console.print(f"Ship level increased to {self.player.ship_level}")
+        # Add other categories and effects as needed
 
     def view_technologies(self):
         self.console.print("Current Technologies:")
@@ -552,6 +544,12 @@ class CargoHauler:
 
         self.console.print(table)
 
+        # Check for quest completion
+        for quest in self.player.active_quests:
+            if quest['conditions']['destination'] == current_planet.name:
+                self.console.print(f"[bold green]Quest completed: {quest['description']}[/bold green]")
+                self.player.complete_quest(quest)
+
         # Add quest system
         self.console.print("\nAvailable Quests:")
         for i, quest in enumerate(self.universe.quests, 1):
@@ -588,7 +586,7 @@ class CargoHauler:
 
     def generate_random_quest(self):
         # Generate a random quest at the start of each player turn
-        num_quests = max(1, self.player.level // 2)  # Adjust the number of quests based on the player's level
+        num_quests = max(1, min(4, self.player.level // 3))  # Adjust the number of quests based on the player's level
         random_quests = random.sample(self.universe.quests, num_quests)
         for quest in random_quests:
             self.console.print(f"\n[bold yellow]New Quest Available:[/bold yellow]")

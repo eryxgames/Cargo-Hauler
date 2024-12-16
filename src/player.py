@@ -21,6 +21,7 @@ class Player:
         self.cargo_used = 0  # Initial cargo used
         self.level = 1  # Initial player level
         self.experience = 0  # Initial experience points
+        self.active_quests = []  # List of active quests
 
     def add_cargo(self, good, quantity, price_per_unit):
         """
@@ -154,28 +155,6 @@ class Player:
 
         return True
 
-    def display_cargo(self):
-        """
-        Display current cargo inventory
-        """
-        print("Current Cargo:")
-        if not self.inventory:
-            print("  Empty")
-            return
-
-        for good, details in self.inventory.items():
-            print(f"  {good}: {details.get('quantity', 0)} units (Avg. Buy Price: {details.get('buy_price', 0):.2f} credits)")
-
-    def get_cargo_summary(self):
-        summary = []
-        for name, details in self.inventory.items():
-            summary.append({
-                'name': name,
-                'quantity': details['quantity'],
-                'buy_price': details['buy_price']
-            })
-        return summary
-
     def gain_experience(self, amount):
         self.experience += amount
         self.check_level_up()
@@ -215,6 +194,12 @@ class Player:
         # Add quest rewards
         self.credits += quest['reward']
         self.console.print(f"Reward: {quest['reward']} credits")
+        self.active_quests.append(quest)
+
+    def complete_quest(self, quest):
+        # Implement quest completion logic
+        self.console.print(f"Quest completed: {quest['description']}")
+        self.active_quests.remove(quest)
 
     def view_technologies(self):
         self.console.print("Current Technologies:")
@@ -291,6 +276,12 @@ class Player:
 
         self.console.print(table)
 
+        # Check for quest completion
+        for quest in self.active_quests:
+            if quest['conditions']['destination'] == current_planet.name:
+                self.console.print(f"[bold green]Quest completed: {quest['description']}[/bold green]")
+                self.complete_quest(quest)
+
         # Add quest system
         self.console.print("\nAvailable Quests:")
         for i, quest in enumerate(self.universe.quests, 1):
@@ -306,6 +297,7 @@ class Player:
             if 1 <= quest_index <= len(self.universe.quests):
                 selected_quest = self.universe.quests[quest_index - 1]
                 self.accept_quest(selected_quest)
+                self.universe.quests.remove(selected_quest)
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:

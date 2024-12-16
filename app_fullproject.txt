@@ -9,7 +9,9 @@ structure: list of files
 - src/events.py
 - src/technologies.py
 - src/universe.py
+- src/visualization.py
 - data/planets.json
+- data/quests.json
 - data/commodities.json
 
 File name: requirements.txt
@@ -79,6 +81,7 @@ class CargoHauler:
         while not self.game_over:
             try:
                 self.display_status()
+                self.generate_random_quest()
                 self.player_turn()
             except KeyboardInterrupt:
                 self.console.print("\n[yellow]Game interrupted. Exiting...[/yellow]")
@@ -97,7 +100,7 @@ class CargoHauler:
                 table.add_column("Value", style="magenta")
 
                 table.add_row("Current Planet", self.current_planet.name)
-                table.add_row("Credits", str(self.player.credits))
+                table.add_row("Credits", f"{self.player.credits:.1f}")
                 table.add_row("Cargo Space", f"{self.player.cargo_used}/{self.player.cargo_capacity}")
 
                 self.console.print(table)
@@ -180,7 +183,7 @@ class CargoHauler:
             ]
             if self.player.trade_route:
                 start_planet, target_planet = self.player.trade_route
-                travel_options.append(f"Use Trade Route ({start_planet.name}—{target_planet.name})")
+                travel_options.append(f"Use Trade Route ({start_planet.name} â†’ {target_planet.name})")
 
             for i, option in enumerate(travel_options, 1):
                 self.console.print(f"{i}. {option}")
@@ -299,7 +302,21 @@ class CargoHauler:
         frontier_planet = Planet(
             name=frontier_planet_name,
             planet_type="Frontier",
-            economy_level=random.uniform(0.3, 1.0)
+            economy_level=random.uniform(0.3, 1.0),
+            resources=self.universe.generate_resources(),
+            status="Stable",
+            characteristics="Neutral",
+            demographics={
+                "Population": random.randint(1000, 10000),
+                "Cyborgs": random.randint(1, 100),
+                "Androids": random.randint(1, 100),
+                "Robots": random.randint(1, 100)
+            },
+            planet_class="Asteroid Belt",
+            moons=0,
+            geology="Rocky",
+            climate="Harsh",
+            history=self.universe.generate_history(frontier_planet_name, "Frontier", "Stable", "Neutral", {"Population": random.randint(1000, 10000), "Cyborgs": random.randint(1, 100), "Androids": random.randint(1, 100), "Robots": random.randint(1, 100)}, "Asteroid Belt", 0, "Rocky", "Harsh")
         )
         self.universe.planets.append(frontier_planet)
         self.current_planet = frontier_planet
@@ -339,7 +356,7 @@ class CargoHauler:
                         'name': commodity,
                         'price': price
                     }
-                    self.console.print(f"{i}. {commodity}: {price:.2f} credits")
+                    self.console.print(f"{i}. {commodity}: {price:.1f} credits")
                 except Exception as price_error:
                     self.console.print(f"[red]Error calculating price for {commodity}: {price_error}[/red]")
 
@@ -380,7 +397,7 @@ class CargoHauler:
 
                             # Perform the purchase
                             if self.player.add_cargo(selected_commodity, quantity, price):
-                                self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.2f} credits[/green]")
+                                self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.1f} credits[/green]")
                                 self.status_changed = True
                             else:
                                 self.console.print("[red]Purchase failed. Check your cargo space or credits.[/red]")
@@ -392,12 +409,12 @@ class CargoHauler:
 
                 elif trade_type in ['s', 'sell']:
                     # Selling logic
-                    if selected_commodity not in self.player.cargo:
+                    if selected_commodity not in self.player.inventory:
                         self.console.print(f"[red]You don't have any {selected_commodity} to sell.[/red]")
                         return
 
                     # Get available quantity safely
-                    available_quantity = self.player.cargo.get(selected_commodity, {}).get('quantity', 0)
+                    available_quantity = self.player.inventory.get(selected_commodity, {}).get('quantity', 0)
 
                     quantity_str = self.console.input(f"[yellow]How many {selected_commodity} do you want to sell? (Max: {available_quantity}): [/yellow]")
 
@@ -409,7 +426,7 @@ class CargoHauler:
 
                             # Perform the sale
                             if self.player.sell_cargo(selected_commodity, quantity, price):
-                                self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.2f} credits[/green]")
+                                self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.1f} credits[/green]")
                                 self.status_changed = True
                             else:
                                 self.console.print("[red]Sale failed.[/red]")
@@ -446,7 +463,7 @@ class CargoHauler:
             self.console.print(f"\n{category}:")
             for upgrade in upgrades:
                 upgrade_options.append(upgrade)
-                self.console.print(f"{len(upgrade_options)}. {upgrade['name']} (Cost: {upgrade['cost']} credits)")
+                self.console.print(f"{len(upgrade_options)}. {upgrade['name']} (Cost: {upgrade['cost']:.1f} credits)")
 
         upgrade_choice = self.console.input("Enter the number of the upgrade to purchase (or 'cancel'): ")
         if upgrade_choice.lower() == 'cancel':
@@ -459,8 +476,8 @@ class CargoHauler:
                 if self.player.credits >= selected_upgrade['cost']:
                     self.player.credits -= selected_upgrade['cost']
                     # Apply upgrade effects
-                    self.apply_upgrade(selected_upgrade)
-                    self.console.print(f"Purchased {selected_upgrade['name']} for {selected_upgrade['cost']} credits.")
+                    self.apply_upgrade_effects(selected_upgrade)
+                    self.console.print(f"Purchased {selected_upgrade['name']} for {selected_upgrade['cost']:.1f} credits.")
                     self.status_changed = True
                 else:
                     self.console.print("Insufficient credits to purchase this upgrade.")
@@ -469,26 +486,18 @@ class CargoHauler:
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
 
-    def apply_upgrade(self, upgrade):
+    def apply_upgrade_effects(self, upgrade):
         category = upgrade['category']
         upgrade_name = upgrade['name']
         effects = upgrade['effects']
 
-        if category == 'Propulsion':
-            self.player.ship_level += 1
-            self.console.print(f"Ship level increased to {self.player.ship_level}")
-        elif category == 'Cargo':
+        if category == 'cargo':
             self.player.cargo_capacity = effects['cargo_capacity']
             self.console.print(f"Cargo capacity increased to {self.player.cargo_capacity}")
-            # Increase cost for subsequent upgrades of the same type
-            self.tech_tree.technologies[category][upgrade_name]['cost'] += 500
-        elif category == 'Life Support':
-            self.player.life_support_expansion = effects['life_support_capacity']
-            self.console.print(f"Life support capacity increased to {self.player.life_support_expansion}")
-        elif category == 'Passenger Pod':
-            self.player.passenger_pod_capacity = effects['passenger_pod_capacity']
-            self.console.print(f"Passenger pod capacity increased to {self.player.passenger_pod_capacity}")
-        # Add more upgrade categories and effects as needed
+        elif category == 'ship_level':
+            self.player.ship_level += 1
+            self.console.print(f"Ship level increased to {self.player.ship_level}")
+        # Add other categories and effects as needed
 
     def view_technologies(self):
         self.console.print("Current Technologies:")
@@ -518,9 +527,9 @@ class CargoHauler:
 
     def view_trade_statistics(self):
         self.console.print("Trade Statistics:")
-        self.console.print(f"Total Profit: {self.player.total_profit} credits")
-        self.console.print(f"Total Loss: {self.player.total_loss} credits")
-        self.console.print(f"Total Spent: {self.player.total_spent} credits")
+        self.console.print(f"Total Profit: {self.player.total_profit:.1f} credits")
+        self.console.print(f"Total Loss: {self.player.total_loss:.1f} credits")
+        self.console.print(f"Total Spent: {self.player.total_spent:.1f} credits")
         self.console.print(f"Most Profitable Good: {self.player.most_profitable_good}")
         self.console.print(f"Most Profitable Trade Route: {self.player.most_profitable_route}")
 
@@ -546,18 +555,36 @@ class CargoHauler:
     def scan_spaceport(self):
         self.console.print("Spaceport Information:")
         current_planet = self.current_planet
-        self.console.print(f"Name: {current_planet.name}")
-        self.console.print(f"Type: {current_planet.type}")
-        self.console.print(f"Economy Level: {current_planet.economy_level}")
-        self.console.print(f"Resources: {current_planet.resources}")
-        self.console.print(f"Status: {current_planet.status}")
-        self.console.print(f"Characteristics: {current_planet.characteristics}")
-        self.console.print(f"Demographics: {current_planet.demographics}")
+        table = Table(show_header=False, box=None)
+        table.add_column()
+        table.add_column()
+
+        table.add_row("Name", current_planet.name)
+        table.add_row("Type", current_planet.type)
+        table.add_row("Economy Level", f"{current_planet.economy_level:.1f}")
+        resources_display = ", ".join([f"{r}: {v:.1f}" for r, v in current_planet.resources.items()])
+        table.add_row("Resources", resources_display)
+        table.add_row("Status", current_planet.status)
+        table.add_row("Characteristics", current_planet.characteristics)
+        demographics_display = f"Population: {current_planet.demographics['Population']}, Cyborgs: {current_planet.demographics['Cyborgs']}, Androids: {current_planet.demographics['Androids']}, Robots: {current_planet.demographics['Robots']}"
+        table.add_row("Demographics", demographics_display)
+        description_display = f"Class: {current_planet.planet_class}, Moons: {current_planet.moons}, Geology: {current_planet.geology}, Climate: {current_planet.climate}"
+        table.add_row("Description and Environment", description_display)
+        table.add_row("History", current_planet.history)
+
+        self.console.print(table)
+
+        # Check for quest completion
+        for quest in self.player.active_quests:
+            if quest['conditions']['destination'] == current_planet.name:
+                self.console.print(f"[bold green]Quest completed: {quest['description']}[/bold green]")
+                self.player.complete_quest(quest)
 
         # Add quest system
         self.console.print("\nAvailable Quests:")
         for i, quest in enumerate(self.universe.quests, 1):
             self.console.print(f"{i}. {quest['description']}")
+            self.console.print(f"   Backstory: {quest['backstory']}")
 
         quest_choice = self.console.input("[bold yellow]Enter the number of the quest to accept (or 'cancel'): [/bold yellow]")
         if quest_choice.lower() == 'cancel':
@@ -567,13 +594,35 @@ class CargoHauler:
             quest_index = int(quest_choice)
             if 1 <= quest_index <= len(self.universe.quests):
                 selected_quest = self.universe.quests[quest_index - 1]
-                self.console.print(f"Quest accepted: {selected_quest['description']}")
-                # Implement quest logic
-                self.player.accept_quest(selected_quest)
+                self.accept_quest(selected_quest)
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
+
+    def accept_quest(self, quest):
+        # Check if the player has the required upgrades for passenger transport quests
+        if quest['type'] == 'passenger_transport':
+            if self.player.passenger_pod_capacity < quest['conditions']['quantity']:
+                self.console.print("[bold red]You do not have enough passenger pod capacity to accept this quest.[/bold red]")
+                return
+            if self.player.life_support_expansion < quest['conditions']['quantity']:
+                self.console.print("[bold red]You do not have enough life support expansion to accept this quest.[/bold red]")
+                return
+
+        # Accept the quest
+        self.console.print(f"Quest accepted: {quest['description']}")
+        self.player.accept_quest(quest)
+
+    def generate_random_quest(self):
+        # Generate a random quest at the start of each player turn
+        num_quests = max(1, min(4, self.player.level // 3))  # Adjust the number of quests based on the player's level
+        random_quests = random.sample(self.universe.quests, num_quests)
+        for quest in random_quests:
+            self.console.print(f"\n[bold yellow]New Quest Available:[/bold yellow]")
+            self.console.print(f"{quest['description']}")
+            self.console.print(f"Backstory: {quest['backstory']}")
+            self.universe.quests.append(quest)
 
 def main():
     try:
@@ -608,6 +657,11 @@ class Player:
         self.most_profitable_route = None
         self.life_support_expansion = 0  # Add life support expansion attribute
         self.passenger_pod_capacity = 0  # Add passenger pod capacity attribute
+        self.cargo_capacity = 100  # Initial cargo capacity
+        self.cargo_used = 0  # Initial cargo used
+        self.level = 1  # Initial player level
+        self.experience = 0  # Initial experience points
+        self.active_quests = []  # List of active quests
 
     def add_cargo(self, good, quantity, price_per_unit):
         """
@@ -741,28 +795,6 @@ class Player:
 
         return True
 
-    def display_cargo(self):
-        """
-        Display current cargo inventory
-        """
-        print("Current Cargo:")
-        if not self.inventory:
-            print("  Empty")
-            return
-
-        for good, details in self.inventory.items():
-            print(f"  {good}: {details.get('quantity', 0)} units (Avg. Buy Price: {details.get('buy_price', 0):.2f} credits)")
-
-    def get_cargo_summary(self):
-        summary = []
-        for name, details in self.inventory.items():
-            summary.append({
-                'name': name,
-                'quantity': details['quantity'],
-                'buy_price': details['buy_price']
-            })
-        return summary
-
     def gain_experience(self, amount):
         self.experience += amount
         self.check_level_up()
@@ -802,6 +834,12 @@ class Player:
         # Add quest rewards
         self.credits += quest['reward']
         self.console.print(f"Reward: {quest['reward']} credits")
+        self.active_quests.append(quest)
+
+    def complete_quest(self, quest):
+        # Implement quest completion logic
+        self.console.print(f"Quest completed: {quest['description']}")
+        self.active_quests.remove(quest)
 
     def view_technologies(self):
         self.console.print("Current Technologies:")
@@ -831,9 +869,9 @@ class Player:
 
     def view_trade_statistics(self):
         self.console.print("Trade Statistics:")
-        self.console.print(f"Total Profit: {self.total_profit} credits")
-        self.console.print(f"Total Loss: {self.total_loss} credits")
-        self.console.print(f"Total Spent: {self.total_spent} credits")
+        self.console.print(f"Total Profit: {self.total_profit:.1f} credits")
+        self.console.print(f"Total Loss: {self.total_loss:.1f} credits")
+        self.console.print(f"Total Spent: {self.total_spent:.1f} credits")
         self.console.print(f"Most Profitable Good: {self.most_profitable_good}")
         self.console.print(f"Most Profitable Trade Route: {self.most_profitable_route}")
 
@@ -859,18 +897,36 @@ class Player:
     def scan_spaceport(self):
         self.console.print("Spaceport Information:")
         current_planet = self.current_planet
-        self.console.print(f"Name: {current_planet.name}")
-        self.console.print(f"Type: {current_planet.type}")
-        self.console.print(f"Economy Level: {current_planet.economy_level}")
-        self.console.print(f"Resources: {current_planet.resources}")
-        self.console.print(f"Status: {current_planet.status}")
-        self.console.print(f"Characteristics: {current_planet.characteristics}")
-        self.console.print(f"Demographics: {current_planet.demographics}")
+        table = Table(show_header=False, box=None)
+        table.add_column()
+        table.add_column()
+
+        table.add_row("Name", current_planet.name)
+        table.add_row("Type", current_planet.type)
+        table.add_row("Economy Level", f"{current_planet.economy_level:.1f}")
+        resources_display = ", ".join([f"{r}: {v:.1f}" for r, v in current_planet.resources.items()])
+        table.add_row("Resources", resources_display)
+        table.add_row("Status", current_planet.status)
+        table.add_row("Characteristics", current_planet.characteristics)
+        demographics_display = f"Population: {current_planet.demographics['Population']}, Cyborgs: {current_planet.demographics['Cyborgs']}, Androids: {current_planet.demographics['Androids']}, Robots: {current_planet.demographics['Robots']}"
+        table.add_row("Demographics", demographics_display)
+        description_display = f"Class: {current_planet.planet_class}, Moons: {current_planet.moons}, Geology: {current_planet.geology}, Climate: {current_planet.climate}"
+        table.add_row("Description and Environment", description_display)
+        table.add_row("History", current_planet.history)
+
+        self.console.print(table)
+
+        # Check for quest completion
+        for quest in self.active_quests:
+            if quest['conditions']['destination'] == current_planet.name:
+                self.console.print(f"[bold green]Quest completed: {quest['description']}[/bold green]")
+                self.complete_quest(quest)
 
         # Add quest system
         self.console.print("\nAvailable Quests:")
         for i, quest in enumerate(self.universe.quests, 1):
             self.console.print(f"{i}. {quest['description']}")
+            self.console.print(f"   Backstory: {quest['backstory']}")
 
         quest_choice = self.console.input("[bold yellow]Enter the number of the quest to accept (or 'cancel'): [/bold yellow]")
         if quest_choice.lower() == 'cancel':
@@ -880,9 +936,8 @@ class Player:
             quest_index = int(quest_choice)
             if 1 <= quest_index <= len(self.universe.quests):
                 selected_quest = self.universe.quests[quest_index - 1]
-                self.console.print(f"Quest accepted: {selected_quest['description']}")
-                # Implement quest logic
                 self.accept_quest(selected_quest)
+                self.universe.quests.remove(selected_quest)
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
@@ -960,12 +1015,13 @@ class EconomySimulator:
 
         return pd.DataFrame(market_data)
 
-    def get_tradable_commodities(self):
-        # Flatten the commodities dictionary into a list
-        all_commodities = []
-        for category, commodities in self.commodities.items():
-            all_commodities.extend(commodities)
-        return all_commodities
+    def get_tradable_commodities(self, planet):
+        tradable = []
+        for category, items in planet.market.items():
+            for item, details in items.items():
+                if details['quantity'] > 0:
+                    tradable.append((category, item, details['price']))
+        return tradable
 
 
 File name: src/events.py
@@ -1086,9 +1142,10 @@ content of src/universe.py
 import random
 import json
 import networkx as nx
+import os
 
 class Planet:
-    def __init__(self, name, planet_type, economy_level, resources, status, characteristics, demographics):
+    def __init__(self, name, planet_type, economy_level, resources, status, characteristics, demographics, planet_class, moons, geology, climate, history):
         self.name = name
         self.type = planet_type
         self.economy_level = economy_level
@@ -1096,6 +1153,11 @@ class Planet:
         self.status = status
         self.characteristics = characteristics
         self.demographics = demographics
+        self.planet_class = planet_class
+        self.moons = moons
+        self.geology = geology
+        self.climate = climate
+        self.history = history
 
     def __repr__(self):
         return f"Planet({self.name})"
@@ -1115,6 +1177,7 @@ class UniverseGenerator:
         self.trade_network = nx.Graph()
         self.quests = []
         self.generate_universe()
+        self.load_quests()
 
     def generate_universe(self):
         planet_names = [
@@ -1146,14 +1209,31 @@ class UniverseGenerator:
                 "Robots": random.randint(1, 100)
             }
 
+            # Generate additional attributes
+            planet_class = random.choice(["Terrestrial", "Gas Giant", "Ice World", "Asteroid Belt"])
+            moons = random.randint(0, 5)
+            geology = random.choice(["Rocky", "Volcanic", "Mountainous", "Flat"])
+            climate = random.choice(["Temperate", "Arid", "Frozen", "Harsh"])
+
+            # Generate planet type
+            planet_type = random.choice(planet_types)
+
+            # Generate history
+            history = self.generate_history(planet_name, planet_type, status, characteristics, demographics, planet_class, moons, geology, climate)
+
             planet = Planet(
                 name=planet_name,
-                planet_type=random.choice(planet_types),
+                planet_type=planet_type,
                 economy_level=random.uniform(0.3, 1.0),
                 resources=self.generate_resources(),
                 status=status,
                 characteristics=characteristics,
-                demographics=demographics
+                demographics=demographics,
+                planet_class=planet_class,
+                moons=moons,
+                geology=geology,
+                climate=climate,
+                history=history
             )
             self.planets.append(planet)
 
@@ -1192,25 +1272,41 @@ class UniverseGenerator:
             for resource in selected_resources
         }
 
-    def generate_quests(self):
-        self.quests = [
-            {
-                'description': "Transport 10 units of raw_materials to Sigma Outpost",
-                'reward': 5000
-            },
-            {
-                'description': "Transport 20 units of agricultural_goods to Nova Haven",
-                'reward': 3000
-            },
-            {
-                'description': "Transport 15 passengers to Orion Prime",
-                'reward': 4000
-            },
-            {
-                'description': "Transport 10 robots to Epsilon Station",
-                'reward': 2000
-            }
+    def generate_history(self, name, planet_type, status, characteristics, demographics, planet_class, moons, geology, climate):
+        # Generate a creative and interesting history for the planet
+        history_templates = [
+            f"{name} was colonized by the first wave of interstellar explorers. Its {planet_type} environment made it a prime candidate for {characteristics} settlements. The planet is known for its {geology} landscapes and {climate} weather conditions. With a population of {demographics['Population']}, it has become a hub for {planet_class} activities.",
+            f"{name} has a rich history of {status} conflicts. Its {planet_type} terrain and {geology} features have made it a strategic location for various factions. The planet's {climate} climate and {moons} moons add to its unique charm. With a population of {demographics['Population']}, it continues to be a center of {characteristics} interactions.",
+            f"{name} was discovered during the great expansion era. Its {planet_type} resources and {geology} formations attracted early settlers. The planet's {climate} environment and {moons} moons have shaped its cultural identity. With a population of {demographics['Population']}, it remains a key player in interstellar {planet_class} trade.",
+            f"{name} has always been a {characteristics} planet, known for its {planet_type} exports and {geology} landscapes. Its {climate} weather and {moons} moons have influenced its development. With a population of {demographics['Population']}, it continues to thrive as a {planet_class} colony.",
+            f"{name} was once a {status} outpost, but its {planet_type} resources and {geology} features have transformed it into a bustling metropolis. The planet's {climate} climate and {moons} moons have contributed to its growth. With a population of {demographics['Population']}, it is now a major {planet_class} hub."
         ]
+        return random.choice(history_templates)
+
+    def load_quests(self):
+        # Load quests from the external JSON file
+        with open(os.path.join(os.path.dirname(__file__), '../data/quests.json'), 'r') as file:
+            quest_data = json.load(file)
+            self.quests = quest_data['quests']
+
+    def generate_random_quest(self):
+        # Generate a random quest at the start of each player turn
+        num_quests = max(1, min(4, self.player.level // 3))  # Adjust the number of quests based on the player's level
+        random_quests = random.sample(self.quests, num_quests)
+        for quest in random_quests:
+            self.console.print(f"\n[bold yellow]New Quest Available:[/bold yellow]")
+            self.console.print(f"{quest['description']}")
+            self.console.print(f"Backstory: {quest['backstory']}")
+            self.quests.append(quest)
+
+
+File name: src/visualization.py
+content of src/visualization.py
+import plotly.express as px
+
+def visualize_market_trends(data):
+    fig = px.line(data, x='time', y='price', color='commodity')
+    fig.show()
 
 
 File name: data/planets.json
@@ -1233,7 +1329,12 @@ content of data/planets.json
                 "Agricultural Goods": 0.9,
                 "Technology": 0.4,
                 "Minerals": 0.3
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 2,
+            "geology": "Mountainous",
+            "climate": "Temperate",
+            "history": "New Terra was colonized by the first wave of interstellar explorers. Its agricultural environment made it a prime candidate for friendly settlements. The planet is known for its mountainous landscapes and temperate weather conditions. With a population of 9000, it has become a hub for terrestrial activities."
         },
         {
             "name": "Proxima",
@@ -1251,7 +1352,12 @@ content of data/planets.json
                 "Manufactured Goods": 0.85,
                 "Rare Elements": 0.6,
                 "Technology": 0.7
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 1,
+            "geology": "Volcanic",
+            "climate": "Arid",
+            "history": "Proxima has a rich history of unstable conflicts. Its industrial terrain and volcanic features have made it a strategic location for various factions. The planet's arid climate and single moon add to its unique charm. With a population of 8000, it continues to be a center of hostile interactions."
         },
         {
             "name": "Arcturus",
@@ -1269,7 +1375,12 @@ content of data/planets.json
                 "Minerals": 0.95,
                 "Rare Elements": 0.8,
                 "Agricultural Goods": 0.2
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 3,
+            "geology": "Rocky",
+            "climate": "Frozen",
+            "history": "Arcturus was discovered during the great expansion era. Its mining resources and rocky formations attracted early settlers. The planet's frozen environment and three moons have shaped its cultural identity. With a population of 7000, it remains a key player in interstellar mining trade."
         },
         {
             "name": "Orion Prime",
@@ -1287,7 +1398,12 @@ content of data/planets.json
                 "Technology": 0.95,
                 "Rare Elements": 0.7,
                 "Manufactured Goods": 0.6
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 2,
+            "geology": "Flat",
+            "climate": "Temperate",
+            "history": "Orion Prime was once a stable outpost, but its high-tech resources and flat landscapes have transformed it into a bustling metropolis. The planet's temperate climate and two moons have contributed to its growth. With a population of 9500, it is now a major high-tech hub."
         },
         {
             "name": "Sigma Outpost",
@@ -1305,7 +1421,12 @@ content of data/planets.json
                 "Manufactured Goods": 0.5,
                 "Agricultural Goods": 0.4,
                 "Minerals": 0.5
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 1,
+            "geology": "Mountainous",
+            "climate": "Arid",
+            "history": "Sigma Outpost has always been a hostile planet, known for its trading hub exports and mountainous landscapes. Its arid weather and single moon have influenced its development. With a population of 8500, it continues to thrive as a terrestrial colony."
         },
         {
             "name": "Epsilon Station",
@@ -1323,7 +1444,12 @@ content of data/planets.json
                 "Rare Elements": 0.5,
                 "Technology": 0.3,
                 "Minerals": 0.6
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 0,
+            "geology": "Flat",
+            "climate": "Harsh",
+            "history": "Epsilon Station was discovered during the great expansion era. Its desert resources and flat formations attracted early settlers. The planet's harsh environment and lack of moons have shaped its cultural identity. With a population of 7500, it remains a key player in interstellar desert trade."
         },
         {
             "name": "Nova Haven",
@@ -1341,7 +1467,60 @@ content of data/planets.json
                 "Agricultural Goods": 0.7,
                 "Manufactured Goods": 0.4,
                 "Technology": 0.5
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 2,
+            "geology": "Mountainous",
+            "climate": "Temperate",
+            "history": "Nova Haven was colonized by the first wave of interstellar explorers. Its oceanic environment made it a prime candidate for friendly settlements. The planet is known for its mountainous landscapes and temperate weather conditions. With a population of 9000, it has become a hub for terrestrial activities."
+        }
+    ]
+}
+
+
+File name: data/quests.json
+content of data/quests.json
+{
+    "quests": [
+        {
+            "type": "passenger_transport",
+            "description": "Transport 15 passengers to Orion Prime. The passengers are a group of scientists heading to a research conference.",
+            "reward": 5000,
+            "conditions": {
+                "destination": "Orion Prime",
+                "quantity": 15
+            },
+            "backstory": "A group of renowned scientists are traveling to Orion Prime for a groundbreaking conference on interstellar travel. Ensure their safe passage."
+        },
+        {
+            "type": "contraband_delivery",
+            "description": "Deliver a mysterious package to Sigma Outpost. The contents are unknown, but the reward is high.",
+            "reward": 5000,
+            "conditions": {
+                "destination": "Sigma Outpost",
+                "quantity": 1
+            },
+            "backstory": "A shadowy figure has hired you to deliver a mysterious package to Sigma Outpost. The contents are unknown, but the reward is too good to pass up."
+        },
+        {
+            "type": "medical_supplies_delivery",
+            "description": "Transport medical supplies to Nova Haven. The colony is in desperate need of medical aid.",
+            "reward": 3000,
+            "conditions": {
+                "destination": "Nova Haven",
+                "quantity": 20
+            },
+            "backstory": "Nova Haven is suffering from a severe medical crisis. Deliver the much-needed supplies to save lives and earn a hefty reward."
+        },
+        {
+            "type": "materials_transport",
+            "description": "Transport raw materials to Epsilon Station. The station is expanding and needs resources.",
+            "reward": 2000,
+            "conditions": {
+                "destination": "Epsilon Station",
+                "quantity": 10
+            },
+            "backstory": "Epsilon Station is undergoing a major expansion. Transport the necessary raw materials to support their growth."
         }
     ]
 }

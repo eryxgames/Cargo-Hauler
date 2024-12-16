@@ -50,7 +50,7 @@ class EconomySimulator:
         # Calculate final price
         final_price = base_price * (1 + price_variation) * economy_multiplier * resource_multiplier
 
-        return round(final_price, 1)
+        return round(final_price, 2)
 
     def get_market_overview(self):
         market_data = []
@@ -67,9 +67,10 @@ class EconomySimulator:
 
         return pd.DataFrame(market_data)
 
-    def get_tradable_commodities(self):
-        # Flatten the commodities dictionary into a list
-        all_commodities = []
-        for category, commodities in self.commodities.items():
-            all_commodities.extend(commodities)
-        return all_commodities
+    def get_tradable_commodities(self, planet):
+        tradable = []
+        for category, items in planet.market.items():
+            for item, details in items.items():
+                if details['quantity'] > 0:
+                    tradable.append((category, item, details['price']))
+        return tradable

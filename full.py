@@ -1,7 +1,7 @@
 import os
 
 def create_full_project_file(files, output_file="app_fullproject.txt"):
-    with open(output_file, 'w') as outfile:
+    with open(output_file, 'w', encoding='utf-8') as outfile:
         outfile.write("You are professional developer and game designer. Here is project code and structure of a python app, rpg space adventure trading game with data science visualization demo stats:\n\n")
         outfile.write("structure: list of files\n\n")
         
@@ -34,7 +34,9 @@ def main():
         'src/events.py',
         'src/technologies.py',
         'src/universe.py',
+        'src/visualization.py',
         'data/planets.json',
+        'data/quests.json',
         'data/commodities.json'
         # Add more files as needed
     ]
