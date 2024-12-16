@@ -8,7 +8,8 @@ class TechnologyTree:
                     'effects': {
                         'speed': 1.0,
                         'fuel_efficiency': 0.8
-                    }
+                    },
+                    'category': 'Propulsion'
                 },
                 'Ion Drives': {
                     'level': 2,
@@ -16,7 +17,8 @@ class TechnologyTree:
                     'effects': {
                         'speed': 1.5,
                         'fuel_efficiency': 1.2
-                    }
+                    },
+                    'category': 'Propulsion'
                 }
             },
             'Cargo': {
@@ -25,14 +27,16 @@ class TechnologyTree:
                     'cost': 1500,
                     'effects': {
                         'cargo_capacity': 100
-                    }
+                    },
+                    'category': 'Cargo'
                 },
                 'Advanced Containers': {
                     'level': 2,
                     'cost': 7500,
                     'effects': {
                         'cargo_capacity': 250
-                    }
+                    },
+                    'category': 'Cargo'
                 }
             }
         }
@@ -46,6 +50,6 @@ class TechnologyTree:
                     available[category].append({
                         'name': tech_name,
                         'cost': tech_info['cost'],
-                        'category': category
+                        'category': tech_info['category']
                     })
         return available

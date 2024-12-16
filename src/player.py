@@ -14,6 +14,7 @@ class Player:
         self.total_loss = 0
         self.most_profitable_good = None
         self.most_profitable_route = None
+        self.trade_route = None  # Add trade_route attribute
 
     def add_cargo(self, good, quantity, price):
         """
