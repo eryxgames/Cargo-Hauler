@@ -15,7 +15,8 @@ class EconomySimulator:
             "agricultural_goods",
             "technological_goods",
             "luxury_goods",
-            "industrial_goods"
+            "industrial_goods",
+            "fuel"  # Adding fuel as a commodity
         ]
 
         commodities = {}
@@ -58,12 +59,9 @@ class EconomySimulator:
         for planet in self.planets:
             planet_prices = {
                 'Planet': planet.name,
-                'Economy Level': planet.economy_level
             }
-
             for commodity in self.commodities:
                 planet_prices[commodity] = self.calculate_price(commodity, planet)
-
             market_data.append(planet_prices)
 
         return pd.DataFrame(market_data)

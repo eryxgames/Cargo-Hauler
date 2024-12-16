@@ -29,6 +29,8 @@ class Player:
         self.fuel_level = 100  # Initial fuel level
         self.total_fuel_used = 0  # Total fuel used
         self.total_trips = 0  # Total trips
+        self.radiation_shield = False  # New ship upgrade
+        self.business_class_module = False  # New ship upgrade
 
     def add_cargo(self, good, quantity, price_per_unit):
         """
@@ -314,3 +316,4 @@ class Player:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
             self.console.print("[bold red]Please enter a number![/bold red]")
+
