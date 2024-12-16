@@ -7,6 +7,7 @@ class EconomySimulator:
     def __init__(self, planets):
         self.planets = planets
         self.commodities = self.generate_commodities()
+        self.market_data = {planet.name: {commodity: {'price': self.calculate_price(commodity, planet), 'quantity': random.randint(50, 200)} for commodity in self.commodities} for planet in self.planets}
 
     def generate_commodities(self):
         commodity_types = [
@@ -74,3 +75,11 @@ class EconomySimulator:
                 if details['quantity'] > 0:
                     tradable.append((category, item, details['price']))
         return tradable
+
+    def update_market(self):
+        for planet in self.planets:
+            for commodity in self.commodities:
+                quantity = self.market_data[planet.name][commodity]['quantity']
+                price = self.calculate_price(commodity, planet)
+                self.market_data[planet.name][commodity]['price'] = price
+                self.market_data[planet.name][commodity]['quantity'] = quantity

@@ -39,6 +39,16 @@
                 "quantity": 10
             },
             "backstory": "Epsilon Station is undergoing a major expansion. Transport the necessary raw materials to support their growth."
+        },
+        {
+            "type": "exploration",
+            "description": "Explore the uncharted territory of Frontier Asteroid Belt and report your findings.",
+            "reward": 4000,
+            "conditions": {
+                "destination": "Frontier Asteroid Belt",
+                "quantity": 1
+            },
+            "backstory": "The Frontier Asteroid Belt is a mysterious and unexplored region. Your mission is to explore and report your findings."
         }
     ]
 }

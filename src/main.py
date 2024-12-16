@@ -62,7 +62,6 @@ class CargoHauler:
 
         self.console.print("[bold yellow]Thanks for playing Cargo Hauler![/bold yellow]")
 
-
     def display_status(self):
         if self.status_changed:
             try:
@@ -73,6 +72,7 @@ class CargoHauler:
                 table.add_row("Current Planet", self.current_planet.name)
                 table.add_row("Credits", f"{self.player.credits:.1f}")
                 table.add_row("Cargo Space", f"{self.player.cargo_used}/{self.player.cargo_capacity}")
+                table.add_row("Fuel Level", f"{self.player.fuel_level}/{self.player.fuel_tank_capacity}")
 
                 self.console.print(table)
                 self.status_changed = False
@@ -90,6 +90,9 @@ class CargoHauler:
                 "View Storyline",
                 "View Trade Statistics",
                 "Scan Spaceport",
+                "Customize Ship",
+                "Save Game",
+                "Load Game",
                 "Quit Game"
             ]
 
@@ -118,6 +121,12 @@ class CargoHauler:
                 elif choice == 8:
                     self.scan_spaceport()
                 elif choice == 9:
+                    self.customize_ship()
+                elif choice == 10:
+                    self.save_game('savegame.json')
+                elif choice == 11:
+                    self.load_game('savegame.json')
+                elif choice == 12:
                     self.game_over = True
                 else:
                     self.console.print("[bold red]Invalid choice![/bold red]")
@@ -142,6 +151,12 @@ class CargoHauler:
         elif event_type == 'technological_breakthrough':
             self.console.print("[bold green]A new technology has been discovered![/bold green]")
             # Implement technological breakthrough effects
+        elif event_type == 'fuel_shortage':
+            self.console.print("[bold red]A fuel shortage affects travel costs![/bold red]")
+            # Implement fuel shortage effects
+        elif event_type == 'cargo_loss':
+            self.console.print("[bold red]A portion of your cargo is lost due to an accident![/bold red]")
+            # Implement cargo loss effects
 
     def travel_menu(self):
         try:
@@ -191,11 +206,7 @@ class CargoHauler:
             if 1 <= choice <= len(self.universe.planets):
                 new_planet = self.universe.planets[choice - 1]
                 if new_planet != self.current_planet:
-                    self.current_planet = new_planet
-                    self.console.print(f"Traveled to {self.current_planet.name}")
-                    self.generate_random_quest()  # Generate new quests when traveling
-                    self.handle_event(self.event_generator.generate_event())
-                    self.end_turn()
+                    self.travel_to_planet(new_planet)
                 else:
                     self.console.print("[bold red]You are already at this planet![/bold red]")
             else:
@@ -206,11 +217,7 @@ class CargoHauler:
     def quantum_drive(self):
         new_planet = random.choice(self.universe.planets)
         if new_planet != self.current_planet:
-            self.current_planet = new_planet
-            self.console.print(f"Traveled to {new_planet.name} using Quantum Drive")
-            self.generate_random_quest()  # Generate new quests when traveling
-            self.handle_event(self.event_generator.generate_event())
-            self.end_turn()
+            self.travel_to_planet(new_planet)
         else:
             self.console.print("[bold red]You are already at this planet![/bold red]")
 
@@ -259,11 +266,7 @@ class CargoHauler:
             self.console.print("[bold red]You are already at this planet![/bold red]")
             return
 
-        self.current_planet = target_planet
-        self.console.print(f"Traveled to {target_planet.name} using trade route from {start_planet.name}")
-        self.generate_random_quest()  # Generate new quests when traveling
-        self.handle_event(self.event_generator.generate_event())
-        self.end_turn()
+        self.travel_to_planet(target_planet)
 
     def frontier_jump(self):
         frontier_planet_names = [
@@ -293,12 +296,26 @@ class CargoHauler:
             history=self.universe.generate_history(frontier_planet_name, "Frontier", "Stable", "Neutral", {"Population": random.randint(1000, 10000), "Cyborgs": random.randint(1, 100), "Androids": random.randint(1, 100), "Robots": random.randint(1, 100)}, "Asteroid Belt", 0, "Rocky", "Harsh")
         )
         self.universe.planets.append(frontier_planet)
-        self.current_planet = frontier_planet
-        self.console.print(f"Traveled to {frontier_planet.name} using Frontier Jump")
-        self.generate_random_quest()  # Generate new quests when traveling
-        self.handle_event(self.event_generator.generate_event())
-        self.end_turn()
+        self.travel_to_planet(frontier_planet)
 
+    def travel_to_planet(self, planet):
+        distance = self.calculate_distance(self.current_planet, planet)
+        fuel_consumption = distance * self.player.ship_fuel_efficiency
+        if self.player.fuel_level >= fuel_consumption:
+            self.player.fuel_level -= fuel_consumption
+            self.player.total_fuel_used += fuel_consumption
+            self.player.total_trips += 1
+            self.current_planet = planet
+            self.console.print(f"Traveled to {planet.name} using {fuel_consumption} units of fuel.")
+            self.generate_random_quest()  # Generate new quests when traveling
+            self.handle_event(self.event_generator.generate_event())
+            self.end_turn()
+        else:
+            self.console.print("[bold red]Not enough fuel to travel![/bold red]")
+
+    def calculate_distance(self, planet1, planet2):
+        # Placeholder for actual distance calculation logic
+        return random.uniform(1, 10)
 
     def end_turn(self):
         self.console.print("\n[bold yellow]End of turn.[/bold yellow]")
@@ -473,6 +490,15 @@ class CargoHauler:
         elif category == 'ship_level':
             self.player.ship_level += 1
             self.console.print(f"Ship level increased to {self.player.ship_level}")
+        elif category == 'fuel_efficiency':
+            self.player.ship_fuel_efficiency = effects['fuel_efficiency']
+            self.console.print(f"Fuel efficiency increased to {self.player.ship_fuel_efficiency}")
+        elif category == 'life_support':
+            self.player.life_support_expansion = effects['life_support_capacity']
+            self.console.print(f"Life support capacity increased to {self.player.life_support_expansion}")
+        elif category == 'passenger_pod':
+            self.player.passenger_pod_capacity = effects['passenger_pod_capacity']
+            self.console.print(f"Passenger pod capacity increased to {self.player.passenger_pod_capacity}")
         # Add other categories and effects as needed
 
     def view_technologies(self):
@@ -508,6 +534,8 @@ class CargoHauler:
         self.console.print(f"Total Spent: {self.player.total_spent:.1f} credits")
         self.console.print(f"Most Profitable Good: {self.player.most_profitable_good}")
         self.console.print(f"Most Profitable Trade Route: {self.player.most_profitable_route}")
+        self.console.print(f"Total Fuel Used: {self.player.total_fuel_used} units")
+        self.console.print(f"Average Fuel Consumption per Trip: {self.player.total_fuel_used / self.player.total_trips:.2f} units")
 
         # Display a table of trade history
         table = Table(title="Trade History")
@@ -593,7 +621,85 @@ class CargoHauler:
             except ValueError:
                 self.console.print("[bold red]Please enter a number![/bold red]")
 
+    def customize_ship(self):
+        self.console.print("Ship Customization:")
+        self.console.print("Allocate resources to different ship components:")
+        components = [
+            "Cargo Capacity",
+            "Fuel Efficiency",
+            "Ship Speed",
+            "Life Support"
+        ]
+        for i, component in enumerate(components, 1):
+            self.console.print(f"{i}. {component}")
 
+        choice = self.console.input("[bold yellow]Enter the number of the component to upgrade: [/bold yellow]")
+
+        try:
+            choice = int(choice)
+            if choice == 1:
+                self.upgrade_cargo_capacity()
+            elif choice == 2:
+                self.upgrade_fuel_efficiency()
+            elif choice == 3:
+                self.upgrade_ship_speed()
+            elif choice == 4:
+                self.upgrade_life_support()
+            else:
+                self.console.print("[bold red]Invalid choice![/bold red]")
+        except ValueError:
+            self.console.print("[bold red]Please enter a number![/bold red]")
+
+    def upgrade_cargo_capacity(self):
+        self.console.print("Upgrading Cargo Capacity...")
+        # Implement cargo capacity upgrade logic
+        self.player.cargo_capacity += 50
+        self.console.print(f"Cargo capacity increased to {self.player.cargo_capacity}")
+
+    def upgrade_fuel_efficiency(self):
+        self.console.print("Upgrading Fuel Efficiency...")
+        # Implement fuel efficiency upgrade logic
+        self.player.ship_fuel_efficiency += 0.1
+        self.console.print(f"Fuel efficiency increased to {self.player.ship_fuel_efficiency}")
+
+    def upgrade_ship_speed(self):
+        self.console.print("Upgrading Ship Speed...")
+        # Implement ship speed upgrade logic
+        self.player.ship_speed += 0.1
+        self.console.print(f"Ship speed increased to {self.player.ship_speed}")
+
+    def upgrade_life_support(self):
+        self.console.print("Upgrading Life Support...")
+        # Implement life support upgrade logic
+        self.player.life_support_expansion += 10
+        self.console.print(f"Life support capacity increased to {self.player.life_support_expansion}")
+
+    def save_game(self, filename):
+        game_state = {
+            'player': self.player.__dict__,
+            'universe': {
+                'planets': [planet.__dict__ for planet in self.universe.planets],
+                'quests': self.universe.quests
+            },
+            'current_planet': self.current_planet.name,
+            'game_over': self.game_over,
+            'status_changed': self.status_changed
+        }
+        with open(filename, 'w') as file:
+            json.dump(game_state, file)
+        self.console.print(f"Game saved to {filename}")
+
+    def load_game(self, filename):
+        with open(filename, 'r') as file:
+            game_state = json.load(file)
+            self.player = Player(self.console)
+            self.player.__dict__.update(game_state['player'])
+            self.universe.planets = [Planet(**planet) for planet in game_state['universe']['planets']]
+            self.universe.quests = game_state['universe']['quests']
+            self.current_planet = next(planet for planet in self.universe.planets if planet.name == game_state['current_planet'])
+            self.game_over = game_state['game_over']
+            self.status_changed = game_state['status_changed']
+        self.console.print(f"Game loaded from {filename}")
 
     def accept_quest(self, quest):
         # Check if the player has the required upgrades for passenger transport quests
@@ -625,9 +731,6 @@ class CargoHauler:
             self.console.print(f"{quest['description']}")
             self.console.print(f"Backstory: {quest['backstory']}")
             self.universe.quests.append(quest)
-
-
-
 
 def main():
     try:

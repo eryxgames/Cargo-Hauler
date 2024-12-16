@@ -1,63 +1,13 @@
+import json
+import os
+
 class TechnologyTree:
     def __init__(self):
-        self.technologies = {
-            'Propulsion': {
-                'Chemical Thrusters': {
-                    'level': 1,
-                    'cost': 1000,
-                    'effects': {
-                        'speed': 1.0,
-                        'fuel_efficiency': 0.8
-                    },
-                    'category': 'Propulsion'
-                },
-                'Ion Drives': {
-                    'level': 2,
-                    'cost': 5000,
-                    'effects': {
-                        'speed': 1.5,
-                        'fuel_efficiency': 1.2
-                    },
-                    'category': 'Propulsion'
-                }
-            },
-            'Cargo': {
-                'Basic Cargo Pods': {
-                    'level': 1,
-                    'cost': 1500,
-                    'effects': {
-                        'cargo_capacity': 100
-                    },
-                    'category': 'Cargo'
-                },
-                'Advanced Containers': {
-                    'level': 2,
-                    'cost': 7500,
-                    'effects': {
-                        'cargo_capacity': 250
-                    },
-                    'category': 'Cargo'
-                }
-            },
-            'Life Support': {
-                'Life Support Expansion': {
-                    'level': 1,
-                    'cost': 5000,
-                    'effects': {
-                        'life_support_capacity': 50
-                    },
-                    'category': 'Life Support'
-                },
-                'Passenger Pod': {
-                    'level': 1,
-                    'cost': 5000,
-                    'effects': {
-                        'passenger_pod_capacity': 50
-                    },
-                    'category': 'Passenger Pod'
-                }
-            }
-        }
+        self.technologies = self.load_technologies()
+
+    def load_technologies(self):
+        with open(os.path.join(os.path.dirname(__file__), '../data/technologies.json'), 'r') as file:
+            return json.load(file)
 
     def get_available_upgrades(self, current_tech=None):
         available = {}

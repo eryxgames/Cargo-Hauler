@@ -2,6 +2,7 @@ import random
 from rich.console import Console
 from rich.table import Table
 import time
+import json
 
 class Player:
     def __init__(self, console):
@@ -23,7 +24,11 @@ class Player:
         self.experience = 0  # Initial experience points
         self.active_quests = []  # List of active quests
         self.ship_level = 1  # Initial ship level
-
+        self.ship_fuel_efficiency = 1.0  # Initial fuel efficiency
+        self.fuel_tank_capacity = 100  # Initial fuel tank capacity
+        self.fuel_level = 100  # Initial fuel level
+        self.total_fuel_used = 0  # Total fuel used
+        self.total_trips = 0  # Total trips
 
     def add_cargo(self, good, quantity, price_per_unit):
         """
@@ -162,7 +167,7 @@ class Player:
         self.check_level_up()
 
     def check_level_up(self):
-        experience_thresholds = [1000, 2500, 4500, 10000, 50000, 100000, 250000, 1000000, 10000000, 5000000]  # Define experience thresholds for each level
+        experience_thresholds = [100, 200, 300, 400, 500]  # Define experience thresholds for each level
         while self.level < len(experience_thresholds) and self.experience >= experience_thresholds[self.level - 1]:
             self.level += 1
             self.console.print(f"[bold green]Level up! You are now level {self.level}[/bold green]")

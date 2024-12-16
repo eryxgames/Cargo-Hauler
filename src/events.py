@@ -18,11 +18,18 @@ class EventGenerator:
             'technological_breakthrough': {
                 'weight': 0.2,
                 'description': "A new technology has been discovered!"
+            },
+            'fuel_shortage': {
+                'weight': 0.1,
+                'description': "A fuel shortage affects travel costs!"
+            },
+            'cargo_loss': {
+                'weight': 0.1,
+                'description': "A portion of your cargo is lost due to an accident!"
             }
         }
 
     def generate_event(self):
-        # Weighted random event selection
         events = list(self.events.keys())
         weights = [self.events[event]['weight'] for event in events]
         selected_event = random.choices(events, weights=weights)[0]
