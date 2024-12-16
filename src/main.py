@@ -5,6 +5,7 @@ import random
 import traceback
 from rich.console import Console
 from rich.table import Table
+import time
 
 # Add the project root to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -34,6 +35,7 @@ class CargoHauler:
         # Game state
         self.current_planet = None
         self.game_over = False
+        self.status_changed = True
 
     def start_game(self):
         self.console.print("[bold green]Welcome to Cargo Hauler![/bold green]")
@@ -59,27 +61,23 @@ class CargoHauler:
         self.console.print("[bold yellow]Thanks for playing Cargo Hauler![/bold yellow]")
 
     def display_status(self):
-        try:
-            table = Table(title="Current Status")
-            table.add_column("Attribute", style="cyan")
-            table.add_column("Value", style="magenta")
+        if self.status_changed:
+            try:
+                table = Table(title="Current Status")
+                table.add_column("Attribute", style="cyan")
+                table.add_column("Value", style="magenta")
 
-            table.add_row("Current Planet", self.current_planet.name)
-            table.add_row("Credits", str(self.player.credits))
-            table.add_row("Cargo Space", f"{self.player.cargo_used}/{self.player.cargo_capacity}")
+                table.add_row("Current Planet", self.current_planet.name)
+                table.add_row("Credits", str(self.player.credits))
+                table.add_row("Cargo Space", f"{self.player.cargo_used}/{self.player.cargo_capacity}")
 
-            self.console.print(table)
-        except Exception as e:
-            self.console.print(f"[red]Error displaying status: {e}[/red]")
+                self.console.print(table)
+                self.status_changed = False
+            except Exception as e:
+                self.console.print(f"[red]Error displaying status: {e}[/red]")
 
     def player_turn(self):
         try:
-            # Generate and handle event
-            event = self.event_generator.generate_event()
-            self.handle_event(event)
-
-            self.display_status()
-
             actions = [
                 "Trade Goods",
                 "Travel to New Planet",
@@ -183,9 +181,14 @@ class CargoHauler:
         try:
             choice = int(choice)
             if 1 <= choice <= len(self.universe.planets):
-                self.current_planet = self.universe.planets[choice - 1]
-                self.console.print(f"Traveled to {self.current_planet.name}")
-                self.end_turn()
+                new_planet = self.universe.planets[choice - 1]
+                if new_planet != self.current_planet:
+                    self.current_planet = new_planet
+                    self.console.print(f"Traveled to {self.current_planet.name}")
+                    self.handle_event(self.event_generator.generate_event())
+                    self.end_turn()
+                else:
+                    self.console.print("[bold red]You are already at this planet![/bold red]")
             else:
                 self.console.print("[bold red]Invalid choice![/bold red]")
         except ValueError:
@@ -193,9 +196,13 @@ class CargoHauler:
 
     def quantum_drive(self):
         new_planet = random.choice(self.universe.planets)
-        self.current_planet = new_planet
-        self.console.print(f"Traveled to {new_planet.name} using Quantum Drive")
-        self.end_turn()
+        if new_planet != self.current_planet:
+            self.current_planet = new_planet
+            self.console.print(f"Traveled to {new_planet.name} using Quantum Drive")
+            self.handle_event(self.event_generator.generate_event())
+            self.end_turn()
+        else:
+            self.console.print("[bold red]You are already at this planet![/bold red]")
 
     def set_up_trade_route(self):
         self.console.print("\nSet up a trade route:")
@@ -234,9 +241,13 @@ class CargoHauler:
             return
 
         start_planet, target_planet = self.player.trade_route
-        self.current_planet = target_planet
-        self.console.print(f"Traveled to {target_planet.name} using trade route from {start_planet.name}")
-        self.end_turn()
+        if target_planet != self.current_planet:
+            self.current_planet = target_planet
+            self.console.print(f"Traveled to {target_planet.name} using trade route from {start_planet.name}")
+            self.handle_event(self.event_generator.generate_event())
+            self.end_turn()
+        else:
+            self.console.print("[bold red]You are already at this planet![/bold red]")
 
     def frontier_jump(self):
         frontier_planet_names = [
@@ -254,10 +265,12 @@ class CargoHauler:
         self.universe.planets.append(frontier_planet)
         self.current_planet = frontier_planet
         self.console.print(f"Traveled to {frontier_planet.name} using Frontier Jump")
+        self.handle_event(self.event_generator.generate_event())
         self.end_turn()
 
     def end_turn(self):
         self.console.print("\n[bold yellow]End of turn.[/bold yellow]")
+        self.status_changed = True
         self.player_turn()
 
     def trade_goods(self):
@@ -329,6 +342,7 @@ class CargoHauler:
                             # Perform the purchase
                             if self.player.add_cargo(selected_commodity, quantity, price):
                                 self.console.print(f"[green]Bought {quantity} {selected_commodity} for {total_cost:.2f} credits[/green]")
+                                self.status_changed = True
                             else:
                                 self.console.print("[red]Purchase failed. Check your cargo space or credits.[/red]")
                         else:
@@ -357,6 +371,7 @@ class CargoHauler:
                             # Perform the sale
                             if self.player.sell_cargo(selected_commodity, quantity, price):
                                 self.console.print(f"[green]Sold {quantity} {selected_commodity} for {total_revenue:.2f} credits[/green]")
+                                self.status_changed = True
                             else:
                                 self.console.print("[red]Sale failed.[/red]")
                         else:
@@ -407,6 +422,7 @@ class CargoHauler:
                     # Apply upgrade effects
                     self.apply_upgrade(selected_upgrade)
                     self.console.print(f"Purchased {selected_upgrade['name']} for {selected_upgrade['cost']} credits.")
+                    self.status_changed = True
                 else:
                     self.console.print("Insufficient credits to purchase this upgrade.")
             else:
@@ -441,10 +457,17 @@ class CargoHauler:
             return
         self.console.print("Storyline:")
         for entry in storyline:
-            self.console.print(entry)
+            self.display_storyline_entry(entry)
 
     def get_storyline(self):
         return self.storyline.get_story_up_to_level(self.player.level)
+
+    def display_storyline_entry(self, entry):
+        self.console.print(f"[bold yellow]Press any key to continue...[/bold yellow]")
+        for char in entry:
+            self.console.print(char, end='')
+            time.sleep(0.05)  # Adjust the speed as needed
+        self.console.input()
 
     def view_trade_statistics(self):
         self.console.print("Trade Statistics:")
