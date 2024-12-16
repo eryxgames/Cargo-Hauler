@@ -26,7 +26,7 @@ class CargoHauler:
 
         # Initialize game systems
         self.universe = UniverseGenerator(difficulty)
-        self.player = Player()
+        self.player = Player(self.console)
         self.economy = EconomySimulator(self.universe.planets)
         self.event_generator = EventGenerator()
         self.tech_tree = TechnologyTree()

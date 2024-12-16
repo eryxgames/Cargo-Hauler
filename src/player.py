@@ -1,7 +1,8 @@
 import random
 
 class Player:
-    def __init__(self):
+    def __init__(self, console):
+        self.console = console
         self.credits = 10000
         self.cargo = {}
         self.cargo_capacity = 100
