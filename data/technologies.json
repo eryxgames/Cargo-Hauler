@@ -1,0 +1,91 @@
+{
+    "Propulsion": {
+        "Chemical Thrusters": {
+            "level": 1,
+            "cost": 1000,
+            "effects": {
+                "speed": 1.0,
+                "fuel_efficiency": 0.8
+            },
+            "category": "Propulsion"
+        },
+        "Ion Drives": {
+            "level": 2,
+            "cost": 5000,
+            "effects": {
+                "speed": 1.5,
+                "fuel_efficiency": 1.2
+            },
+            "category": "Propulsion"
+        }
+    },
+    "Cargo": {
+        "Basic Cargo Pods": {
+            "level": 1,
+            "cost": 1500,
+            "effects": {
+                "cargo_capacity": 100
+            },
+            "category": "Cargo"
+        },
+        "Advanced Containers": {
+            "level": 2,
+            "cost": 7500,
+            "effects": {
+                "cargo_capacity": 250
+            },
+            "category": "Cargo"
+        }
+    },
+    "Life Support": {
+        "Basic Life Support Upgrade": {
+            "cost": 5000,
+            "level": 1,
+            "effects": {
+                "passenger_pod_capacity": 5
+            },
+            "category": "Life Support"
+        },
+        "Advanced Life Support Upgrade": {
+            "cost": 10000,
+            "level": 2,
+            "effects": {
+                "passenger_pod_capacity": 10
+            },
+            "requirements": ["Basic Life Support Upgrade"],
+            "category": "Life Support"
+        },
+        "Radiation Shield": {
+            "cost": 15000,
+            "level": 1,
+            "effects": {
+                "radiation_shield": true
+            },
+            "category": "Life Support"
+        },
+        "Business Class Module": {
+            "cost": 20000,
+            "level": 1,
+            "effects": {
+                "business_class_module": true
+            },
+            "category": "Passenger Pod"
+        },            
+        "Life Support Expansion": {
+            "level": 1,
+            "cost": 5000,
+            "effects": {
+                "life_support_capacity": 50
+            },
+            "category": "Life Support"
+        },
+        "Passenger Pod": {
+            "level": 1,
+            "cost": 5000,
+            "effects": {
+                "passenger_pod_capacity": 50
+            },
+            "category": "Passenger Pod"
+        }
+    }
+}

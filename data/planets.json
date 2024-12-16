@@ -4,71 +4,162 @@
             "name": "New Terra",
             "type": "Agricultural",
             "economy_level": 0.8,
+            "status": "Stable",
+            "characteristics": "Friendly",
+            "demographics": {
+                "Population": 9000,
+                "Cyborgs": 5,
+                "Androids": 10,
+                "Robots": 15
+            },
             "resources": {
                 "Agricultural Goods": 0.9,
                 "Technology": 0.4,
                 "Minerals": 0.3
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 2,
+            "geology": "Mountainous",
+            "climate": "Temperate",
+            "history": "New Terra was colonized by the first wave of interstellar explorers. Its agricultural environment made it a prime candidate for friendly settlements. The planet is known for its mountainous landscapes and temperate weather conditions. With a population of 9000, it has become a hub for terrestrial activities."
         },
         {
             "name": "Proxima",
-            "type": "Industrial", 
+            "type": "Industrial",
             "economy_level": 0.7,
+            "status": "Unstable",
+            "characteristics": "Hostile",
+            "demographics": {
+                "Population": 8000,
+                "Cyborgs": 10,
+                "Androids": 5,
+                "Robots": 15
+            },
             "resources": {
                 "Manufactured Goods": 0.85,
                 "Rare Elements": 0.6,
                 "Technology": 0.7
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 1,
+            "geology": "Volcanic",
+            "climate": "Arid",
+            "history": "Proxima has a rich history of unstable conflicts. Its industrial terrain and volcanic features have made it a strategic location for various factions. The planet's arid climate and single moon add to its unique charm. With a population of 8000, it continues to be a center of hostile interactions."
         },
         {
             "name": "Arcturus",
             "type": "Mining",
             "economy_level": 0.5,
+            "status": "War-torn",
+            "characteristics": "Neutral",
+            "demographics": {
+                "Population": 7000,
+                "Cyborgs": 5,
+                "Androids": 10,
+                "Robots": 20
+            },
             "resources": {
                 "Minerals": 0.95,
                 "Rare Elements": 0.8,
                 "Agricultural Goods": 0.2
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 3,
+            "geology": "Rocky",
+            "climate": "Frozen",
+            "history": "Arcturus was discovered during the great expansion era. Its mining resources and rocky formations attracted early settlers. The planet's frozen environment and three moons have shaped its cultural identity. With a population of 7000, it remains a key player in interstellar mining trade."
         },
         {
             "name": "Orion Prime",
             "type": "High-Tech",
             "economy_level": 0.9,
+            "status": "Stable",
+            "characteristics": "Friendly",
+            "demographics": {
+                "Population": 9500,
+                "Cyborgs": 10,
+                "Androids": 5,
+                "Robots": 15
+            },
             "resources": {
                 "Technology": 0.95,
                 "Rare Elements": 0.7,
                 "Manufactured Goods": 0.6
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 2,
+            "geology": "Flat",
+            "climate": "Temperate",
+            "history": "Orion Prime was once a stable outpost, but its high-tech resources and flat landscapes have transformed it into a bustling metropolis. The planet's temperate climate and two moons have contributed to its growth. With a population of 9500, it is now a major high-tech hub."
         },
         {
             "name": "Sigma Outpost",
             "type": "Trading Hub",
             "economy_level": 0.6,
+            "status": "Unstable",
+            "characteristics": "Hostile",
+            "demographics": {
+                "Population": 8500,
+                "Cyborgs": 5,
+                "Androids": 10,
+                "Robots": 15
+            },
             "resources": {
                 "Manufactured Goods": 0.5,
                 "Agricultural Goods": 0.4,
                 "Minerals": 0.5
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 1,
+            "geology": "Mountainous",
+            "climate": "Arid",
+            "history": "Sigma Outpost has always been a hostile planet, known for its trading hub exports and mountainous landscapes. Its arid weather and single moon have influenced its development. With a population of 8500, it continues to thrive as a terrestrial colony."
         },
         {
             "name": "Epsilon Station",
             "type": "Desert",
             "economy_level": 0.4,
+            "status": "War-torn",
+            "characteristics": "Neutral",
+            "demographics": {
+                "Population": 7500,
+                "Cyborgs": 15,
+                "Androids": 5,
+                "Robots": 20
+            },
             "resources": {
                 "Rare Elements": 0.5,
                 "Technology": 0.3,
                 "Minerals": 0.6
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 0,
+            "geology": "Flat",
+            "climate": "Harsh",
+            "history": "Epsilon Station was discovered during the great expansion era. Its desert resources and flat formations attracted early settlers. The planet's harsh environment and lack of moons have shaped its cultural identity. With a population of 7500, it remains a key player in interstellar desert trade."
         },
         {
             "name": "Nova Haven",
             "type": "Oceanic",
             "economy_level": 0.7,
+            "status": "Stable",
+            "characteristics": "Friendly",
+            "demographics": {
+                "Population": 9000,
+                "Cyborgs": 5,
+                "Androids": 10,
+                "Robots": 5
+            },
             "resources": {
                 "Agricultural Goods": 0.7,
                 "Manufactured Goods": 0.4,
                 "Technology": 0.5
-            }
+            },
+            "planet_class": "Terrestrial",
+            "moons": 2,
+            "geology": "Mountainous",
+            "climate": "Temperate",
+            "history": "Nova Haven was colonized by the first wave of interstellar explorers. Its oceanic environment made it a prime candidate for friendly settlements. The planet is known for its mountainous landscapes and temperate weather conditions. With a population of 9000, it has become a hub for terrestrial activities."
         }
     ]
 }

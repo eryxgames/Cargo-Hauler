@@ -1,42 +1,14 @@
+import json
+import os
+
 class TechnologyTree:
     def __init__(self):
-        self.technologies = {
-            'Propulsion': {
-                'Chemical Thrusters': {
-                    'level': 1,
-                    'cost': 1000,
-                    'effects': {
-                        'speed': 1.0,
-                        'fuel_efficiency': 0.8
-                    }
-                },
-                'Ion Drives': {
-                    'level': 2,
-                    'cost': 5000,
-                    'effects': {
-                        'speed': 1.5,
-                        'fuel_efficiency': 1.2
-                    }
-                }
-            },
-            'Cargo': {
-                'Basic Cargo Pods': {
-                    'level': 1,
-                    'cost': 1500,
-                    'effects': {
-                        'cargo_capacity': 100
-                    }
-                },
-                'Advanced Containers': {
-                    'level': 2,
-                    'cost': 7500,
-                    'effects': {
-                        'cargo_capacity': 250
-                    }
-                }
-            }
-        }
-    
+        self.technologies = self.load_technologies()
+
+    def load_technologies(self):
+        with open(os.path.join(os.path.dirname(__file__), '../data/technologies.json'), 'r') as file:
+            return json.load(file)
+
     def get_available_upgrades(self, current_tech=None):
         available = {}
         for category, techs in self.technologies.items():
@@ -45,6 +17,8 @@ class TechnologyTree:
                 if not current_tech or tech_info['level'] > current_tech.get(tech_name, {}).get('level', 0):
                     available[category].append({
                         'name': tech_name,
-                        'cost': tech_info['cost']
+                        'cost': tech_info['cost'],
+                        'category': tech_info['category'],
+                        'effects': tech_info['effects']
                     })
         return available
