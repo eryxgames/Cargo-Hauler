@@ -47,7 +47,7 @@ The new system provides:
 - Detailed commodity information
 - Dynamic pricing based on multiple factors
 
-## Dependencies
+## Dependencies (under evaluation for various demos)
 - NumPy
 - Pandas
 - NetworkX
